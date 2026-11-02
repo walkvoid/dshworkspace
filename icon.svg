@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-label="Financial Dashboard">
+  <rect x="1" y="1" width="30" height="30" rx="8" fill="#1f3d33"/>
+  <path d="M9 7v4M9 21v4" stroke="#f2f5f3" stroke-width="1.6" stroke-linecap="round"/>
+  <rect x="6.8" y="11" width="4.4" height="10" rx="1.2" fill="#e0564e"/>
+  <path d="M16 5v3M16 24v3" stroke="#f2f5f3" stroke-width="1.6" stroke-linecap="round"/>
+  <rect x="13.8" y="8" width="4.4" height="16" rx="1.2" fill="#f2f5f3"/>
+  <path d="M23 9v4M23 22v3" stroke="#f2f5f3" stroke-width="1.6" stroke-linecap="round"/>
+  <rect x="20.8" y="13" width="4.4" height="9" rx="1.2" fill="#3f9c6a"/>
+</svg>

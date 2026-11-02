@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Financial Dashboard",
+    "description": "Index and watchlist quotes with a 120-day candlestick chart, refreshed every 15 seconds in a right-sidebar tab."
+  }
+}

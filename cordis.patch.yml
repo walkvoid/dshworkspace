@@ -1,0 +1,3 @@
+- insert:
+    - id: financial-dashboard
+      name: '@local/financial-dashboard'
