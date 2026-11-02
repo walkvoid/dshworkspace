@@ -9,6 +9,84 @@ DeepSeek Harness（DSH）插件集合。每个子目录都是一个可直接安�
 | --- | --- |
 | [`financial-dashboard`](./financial-dashboard/README.md) | 金融看板：右侧栏标签页 + 左侧栏整页面板，指数与自选股行情、近 120 个交易日 K 线，15 秒自动刷新 |
 
+## 人格化分析
+
+把一位财经博主的方法论"数字化"，让他在对话里按自己的框架评价一只股票。
+不是角色扮演，而是三层：人格卡 + 可执行的框架细则 + 实时数据接地。
+
+| 路径 | 说明 |
+| --- | --- |
+| [`.dsh/skills/shichijijiucai/`](./.dsh/skills/shichijijiucai/SKILL.md) | 人格技能：`/9c 中国平安` 触发，流程固定为 解析 → 取数 → 三因子填表 → 硬规则 → 输出 |
+| [`.dsh/skills/9c/`](./.dsh/skills/9c/SKILL.md) | 短别名：转发到上面那份人格资产，不复制内容 |
+| [`scripts/stock-data.mjs`](./scripts/stock-data.mjs) | 数据接地：腾讯行情 + 东财 F10 财务/分红，算股息率、最低派息率、穿透回报率、现金流代理 |
+
+用法（DSH 会自动发现项目根 `.dsh/skills`，无需重启）：
+
+```text
+/9c 中国平安这个股票如何
+/shichijijiucai 中国平安
+用龟龟法看看 601318
+```
+
+技能名必须是 kebab-case，所以真正的斜杠命令是 `/9c` 与 `/shichijijiucai`；
+`/史诗级韭菜` 作为触发词写在技能描述里，模型会据此加载同一份指令。
+
+`/9c` 为什么是独立目录：DSH 的 `/name` 调用按技能名精确匹配，
+一个技能只能有一个名字，所以短别名做成 `.dsh/skills/9c/`，
+正文只写"转发 + 四步要点"，权威内容仍在 `shichijijiucai/`，两边不会漂移。
+
+数据脚本可单独使用：
+
+```powershell
+node scripts/stock-data.mjs all 中国平安
+node scripts/stock-data.mjs resolve 贵州茅台
+```
+
+新增第二个人格：复制 `.dsh/skills/shichijijiucai/` 为 `.dsh/skills/<新名字>/`，
+改 `SKILL.md` 的 frontmatter 与 `persona.md`，`scripts/stock-data.mjs` 共用。
+
+## 数据层（统一取数入口）
+
+`data/` 是唯一的取数入口：一个请求形状、一种结果形状、一份缓存、一份来源记录，
+不管最终是哪个上游答的。
+
+```js
+import { get } from './data/index.mjs';
+
+const r = await get({ kind: 'quote', instrument: 'hk:02318' });
+// r.data  → 归一化行情（A 股与港股同构，只有 currency 不同）
+// r.meta  → { source, fetchedAt, cached, stale, degraded }
+```
+
+| 组件 | 文件 | 职责 |
+| --- | --- | --- |
+| 入口与路由 | `data/index.mjs` | `get()`、provider 注册表、失败回退、缓存与 stale 兜底 |
+| 策略 | `data/policy.mjs` | 支持哪些 kind、各类 TTL、每个 kind 的 provider 优先顺序 |
+| 身份 | `data/instruments.mjs` | `cn:601318` / `hk:02318` 解析，拒绝裸代码歧义 |
+| 缓存 | `data/cache.mjs` | TTL + LRU 上限；过期条目保留给 stale 读取 |
+| 错误 | `data/errors.mjs` | `ProviderError` 与稳定错误码 |
+| 上游 | `data/providers/*.mjs` | tencent（A/H 行情、日线、名称搜索、汇率）、eastmoney（A/H 财务与年报、A 股分红）、eastmoney-ann（公告列表 + 港股分红公告解析）、private（私有库 stub） |
+
+支持的数据种类：`quote` `bars` `search` `fundamentals` `dividends` `annual` `fx` `announcements`。
+单只标的作用 `get()`，一组标的（自选股）用 `getMany()`——后者会先向支持批量的 provider
+要一次，避免 N 次往返。`fx` 用于跨币种换算，例如 `get({ kind: 'fx', pair: 'HKDCNY' })`。
+
+**港股分红**没有结构化报表，走港交所派息公告解析（`data/dividend-parse.mjs`）：公告正文是固定标签表，
+正则确定性抽取「每股派息 / 宣派币种 / 除净日 / 派息日」，噪声公告按"是否含宣派金额"过滤，
+"(更新)"版按「报告期末 + 股息类型」去重取最新。
+
+**接入私有数据库**：实现 `data/providers/private.mjs` 的 `fetch()`，在 `capabilities` 里声明
+它能答哪些 kind / market 即可。`policy.mjs` 已经把 `private` 排在财务类第一位，声明后自动生效，
+公开源自动退为兜底与交叉校验。
+
+**契约测试**（离线，用 `data/test/fixtures/` 里固化的上游响应）：
+
+```powershell
+node --test data/test/contract.test.mjs
+```
+
+上游改字段时测试会变红——这是唯一低成本的防线。
+
 ## 安装
 
 ```powershell
@@ -27,3 +105,4 @@ git clone https://github.com/walkvoid/dshworkspace.git D:\dshworkspace
 - 每个插件目录是一个独立 npm 包，自带 `package.json`、`cordis.patch.yml`，按需声明 `dsh.client`。
 - 生成产物（如 `client.js`）随仓库提交；源码与构建脚本也一并保留，便于修改后重建。
 - 根目录 `.gitattributes` 统一行尾为 LF，并把 `client.js` 标记为 `-text`，保证跨机器逐字节一致。
+- `.dsh/skills/` 是项目级技能目录，DSH 按最近的 `.git` 祖先定位项目根后自动发现，改动即时生效。

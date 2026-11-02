@@ -36,7 +36,7 @@ git clone https://github.com/walkvoid/dshworkspace.git D:\dshworkspace
 
 | 文件 | 作用 |
 | --- | --- |
-| `index.js` | Host 半侧：注册 `GET /financial-dashboard/quotes`，代理腾讯行情/日线并维护内存缓存 |
+| `index.js` | Host 半侧：注册 `GET /financial-dashboard/quotes`，把参数转成统一数据层的 `getMany()` / `get()` 调用，再把结果映射成客户端认识的字段 |
 | `client.js` | 生成的浏览器半侧：内联 ECharts 5.6.0，注册标签类型、正文、标题、开始页卡片与左侧栏面板 |
 | `client-source.js` | 浏览器半侧的源码（Authoring source） |
 | `scripts/build.mjs` | 构建：下载固定版本 ECharts 并内联进 `client.js` |
@@ -44,6 +44,9 @@ git clone https://github.com/walkvoid/dshworkspace.git D:\dshworkspace
 | `cordis.patch.yml` | 插入 Host 插件行 `financial-dashboard` |
 | `locale/*.json` | 插件管理中的显示标题与描述（`meta.title` / `meta.description`） |
 | `icon.svg` | 插件图标 |
+
+行情抓取、归一化、缓存与过期兜底都在仓库根目录的 [`data/`](../README.md#数据层统一取数入口) 数据层里；
+本插件通过 `../data/index.mjs` 引用它（安装时是指向仓库的 junction，因此同级目录必须存在）。
 
 ## Host 路由
 
