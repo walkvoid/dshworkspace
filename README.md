@@ -3,6 +3,20 @@
 DeepSeek Harness（DSH）插件集合。每个子目录都是一个可直接安装的 bundle（自带 `package.json`），
 生成的浏览器包随仓库提交，clone 后无需构建即可安装。
 
+## 在另一台机器安装
+
+[`SKILL_INSTALL_GUIDE.md`](./SKILL_INSTALL_GUIDE.md) 是写给 **AI Agent** 的安装引导：把这份文档
+（或其 raw 地址）交给目标机器上的 Agent，它会自动完成下面几步——
+
+1. 克隆仓库到固定位置；
+2. 用 `scripts/install-skills.mjs` 把 `/9c`、`/shichijijiucai` 装进技能目录（copy 会写 `repo.txt` 兜底路径，link 用目录联接）；
+3. 在 DSH 里通过 `plugin_manager` 安装金融看板；
+4. 可选：弹一个二选一（「不要（跳过）」/「要，我提供密钥」）；选「要」则装第三方技能包、写入密钥并自检。
+
+```text
+阅读 https://raw.githubusercontent.com/walkvoid/dshworkspace/main/SKILL_INSTALL_GUIDE.md，完成安装
+```
+
 ## 插件
 
 | 目录 | 说明 |
