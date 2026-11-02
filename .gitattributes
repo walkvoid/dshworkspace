@@ -1,4 +1,5 @@
-﻿* text=auto eol=lf
+* text=auto eol=lf
+client.js -text
 *.png binary
 *.ico binary
 *.tgz binary
