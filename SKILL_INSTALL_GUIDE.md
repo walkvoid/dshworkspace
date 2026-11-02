@@ -161,15 +161,35 @@ DSH 里用户的输入会作为自定义回答返回；若宿主支持密码型�
 1. **下载并解压厂商包**：
 
    ```powershell
+   # Windows
    Invoke-WebRequest "https://s.thsi.cn/cd/ifind-java-ds-bff-web-container/ifind-mcp-web/skills/ifind-finance-data-1.5.0.zip" -OutFile "$env:TEMP\ifind.zip" -UseBasicParsing
+   Expand-Archive "$env:TEMP\ifind.zip" "$env:TEMP\ifind_extract" -Force
+   ```
+
+   ```bash
+   # macOS / Linux
+   curl -fSL -o /tmp/ifind.zip "https://s.thsi.cn/cd/ifind-java-ds-bff-web-container/ifind-mcp-web/skills/ifind-finance-data-1.5.0.zip"
+   unzip -q /tmp/ifind.zip -d /tmp/ifind_extract
+   ```
+
+   **若下载 404**：不要猜新地址，去读厂商自己的引导取当前链接：
+
+   ```text
+   https://mcp.51ifind.com/gwstatic/static/ds_web/ifind-mcp-web/skills/SKILL_INSTALL_GUIDE.md
    ```
 
 2. **复制到技能目录**：把含 `SKILL.md` 的那层目录复制为 `<技能根目录>/ifind-finance-data`（目录名不带版本号），
    确认 `mcp_config.json` 存在。
 
+   > 装到用户级（`~/.dsh/skills`）或仓库内（`<仓库>/.dsh/skills`）都可以——
+   > `data/providers/ifind.mjs` 会依次查找 `IFIND_SKILL_DIR`、仓库、`~/.dsh/skills`、
+   > `~/.agents/skills`、`~/.config/agents/skills`、`~/.claude/skills`，命中哪个用哪个。
+   > 需要指定其他位置时设置环境变量 `IFIND_SKILL_DIR`。
+
 3. **写入密钥**（此时才写）：
 
    ```js
+   const fs = require('fs');
    const p = '<技能根目录>/ifind-finance-data/mcp_config.json';
    const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
    cfg.auth_token = token.trim();          // 先去首尾空白
@@ -180,6 +200,7 @@ DSH 里用户的输入会作为自定义回答返回；若宿主支持密码型�
 
 4. **自检**：临时脚本调用 `require("<技能根目录>/ifind-finance-data/call-node.js").listTools("stock")`，
    输出含 `SELFCHECK_RESULT:` 且为合法 JSON 即通过；完成后删除临时脚本。
+   自检需要能访问 `api-mcp.51ifind.com:8643`；超时通常是网络/代理问题，不是安装失败。
 
 5. **提醒一次**：密钥会留在本次对话记录里；不想保留可改成文件配置并清空对话。不要反复强调。
 
@@ -238,6 +259,7 @@ iFinD           ：已接入（自检通过，密钥 ***）/ 未接入 / 失败�
 | 看板空白 / 无数据 | 插件 host 侧改动需重启 DSH；确认能访问 `qt.gtimg.cn` |
 | iFinD 自检 401 | 密钥不完整或过期，重新获取 |
 | iFinD 自检 403 | 安装成功但账号权益不足，不是安装问题 |
+| iFinD 装了但行情仍走腾讯 | provider 没找到技能目录：把包放到 `<仓库>/.dsh/skills/`，或设 `IFIND_SKILL_DIR` 指向它，再跑 `node "<仓库>/scripts/verify-quotes.mjs"` 确认 |
 | 行情全失败 | 先跑第 5 步第 1 项定位是上游网络还是代码问题 |
 
 ---

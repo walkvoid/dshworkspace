@@ -15,15 +15,44 @@
  * the router falls through to the next provider.
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { ERROR_CODES, ProviderError, asProviderError } from '../errors.mjs';
 
-/** Default location of the installed skill, overridable for other layouts. */
-const SKILL_DIR =
-  process.env.IFIND_SKILL_DIR ?? path.resolve(fileURLToPath(new URL('../../.dsh/skills/ifind-finance-data', import.meta.url)));
+/**
+ * Where the vendor skill may live, in priority order.
+ *
+ * The install guide lets the user choose a skill root — project level (inside the
+ * repository) or user level (`~/.dsh/skills`). Both are valid, so the provider
+ * searches every root the harness itself scans instead of pinning one path;
+ * otherwise a user-level install would be silently ignored and quotes would
+ * quietly fall back to Tencent.
+ */
+function candidateDirs() {
+  const home = os.homedir();
+  return [
+    process.env.IFIND_SKILL_DIR,
+    path.resolve(fileURLToPath(new URL('../../.dsh/skills/ifind-finance-data', import.meta.url))),
+    path.join(home, '.dsh', 'skills', 'ifind-finance-data'),
+    path.join(home, '.agents', 'skills', 'ifind-finance-data'),
+    path.join(home, '.config', 'agents', 'skills', 'ifind-finance-data'),
+    path.join(home, '.claude', 'skills', 'ifind-finance-data'),
+  ].filter((dir) => typeof dir === 'string' && dir !== '');
+}
+
+/**
+ * Locate the installed skill by looking for its entry point.
+ * @returns the absolute directory, or `null` when it is not installed anywhere.
+ */
+export function resolveSkillDir() {
+  for (const dir of candidateDirs()) {
+    if (fs.existsSync(path.join(dir, 'call-node.js'))) return dir;
+  }
+  return null;
+}
 
 /** Indicators we ask for; the service caps a request at ten. */
 const INDICATORS = '最新价,涨跌幅,开盘价,最高价,最低价,成交额,成交量,总市值,市盈率TTM,市净率';
@@ -36,9 +65,11 @@ let cachedClient;
 
 /**
  * Read the key from the skill config without echoing it.
+ * @param skillDir - skill directory; defaults to the resolved install location.
  * @returns `true` when a real key is configured.
  */
-export function isConfigured(skillDir = SKILL_DIR) {
+export function isConfigured(skillDir = resolveSkillDir()) {
+  if (skillDir === null) return false;
   try {
     const config = JSON.parse(fs.readFileSync(path.join(skillDir, 'mcp_config.json'), 'utf8'));
     const token = typeof config.auth_token === 'string' ? config.auth_token.trim() : '';
@@ -52,12 +83,17 @@ export function isConfigured(skillDir = SKILL_DIR) {
  * Load the vendor's MCP client (`call-node.js`).
  * @returns `{ call, listTools }`.
  */
-function client(skillDir = SKILL_DIR) {
+function client() {
   if (cachedClient !== undefined) return cachedClient;
-  const entry = path.join(skillDir, 'call-node.js');
-  if (!fs.existsSync(entry)) {
-    throw new ProviderError('ifind', ERROR_CODES.UNSUPPORTED, `ifind skill not found at ${skillDir}`);
+  const skillDir = resolveSkillDir();
+  if (skillDir === null) {
+    throw new ProviderError(
+      'ifind',
+      ERROR_CODES.UNSUPPORTED,
+      'ifind skill is not installed (checked IFIND_SKILL_DIR, the repository, ~/.dsh/skills and ~/.agents/skills)',
+    );
   }
+  const entry = path.join(skillDir, 'call-node.js');
   const require = createRequire(import.meta.url);
   cachedClient = require(entry);
   return cachedClient;

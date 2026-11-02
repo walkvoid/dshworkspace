@@ -11,6 +11,7 @@
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { get, getMany, clearCache, listProviders, registerProvider } from '../index.mjs';
 import { parseInstrument, toSecuCode } from '../instruments.mjs';
 import { parseHkDividend, toHkDividendRows } from '../dividend-parse.mjs';
+import { isConfigured, resolveSkillDir } from '../providers/ifind.mjs';
 import { tableRows, toQuote as toIfindQuote } from '../providers/ifind.mjs';
 import { parseBars, parseFx, parseQuoteText, parseSmartbox } from '../providers/tencent.mjs';
 import {
@@ -371,6 +373,22 @@ test('ifind rows without a price are dropped instead of guessed', () => {
   const payload = { data: { tables: [['证券代码', '证券简称', '最新价'], ['601318.SH', '中国平安', '']] } };
   const quote = toIfindQuote(tableRows(payload)[0]);
   assert.equal(quote, null);
+});
+
+test('ifind skill location honours the env override and the install roots', () => {
+  const previous = process.env.IFIND_SKILL_DIR;
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ifind-skill-'));
+  try {
+    fs.writeFileSync(path.join(temp, 'call-node.js'), 'module.exports = {};\n');
+    process.env.IFIND_SKILL_DIR = temp;
+    assert.equal(resolveSkillDir(), temp);
+    assert.equal(isConfigured(temp), false, 'a config without a key is not configured');
+    assert.equal(isConfigured(null), false, 'no directory means no key');
+  } finally {
+    if (previous === undefined) delete process.env.IFIND_SKILL_DIR;
+    else process.env.IFIND_SKILL_DIR = previous;
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
 });
 
 test('the default registry exposes capability declarations', () => {
