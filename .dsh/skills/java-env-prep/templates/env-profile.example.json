@@ -1,0 +1,45 @@
+{
+  "project": "example-service",
+  "databases": [
+    {
+      "id": "mysql-dev",
+      "kind": "mysql",
+      "env": "dev",
+      "host": "10.0.0.11",
+      "port": 3306,
+      "database": "order_db",
+      "username": "readonly",
+      "password": "<填入>"
+    }
+  ],
+  "nacos": [
+    {
+      "id": "nacos-dev",
+      "url": "http://10.0.0.20:8848/nacos",
+      "namespace": "dev",
+      "username": "nacos",
+      "password": "<填入>",
+      "groups": ["DEFAULT_GROUP"],
+      "dataIds": ["order-service-dev.yml"]
+    }
+  ],
+  "nexus": [
+    {
+      "id": "nexus",
+      "url": "https://nexus.example.com",
+      "repository": "maven-releases",
+      "username": "deploy",
+      "password": "<填入>"
+    }
+  ],
+  "environments": [
+    { "id": "dev", "name": "开发环境", "url": "https://dev.example.com" },
+    { "id": "test", "name": "测试环境", "url": "https://test.example.com" }
+  ],
+  "git": [
+    { "id": "backend", "url": "git@gitlab.example.com:team/order-service.git", "dir": "~/code/order-service", "branch": "main" }
+  ],
+  "logs": [
+    { "id": "log-platform", "url": "https://logs.example.com", "note": "内部日志平台" }
+  ]
+}
