@@ -1,4 +1,4 @@
-# 安装引导：dshworkspace（金融看板 + 史诗级韭菜人格分析）
+# 安装引导：dshworkspace（金融看板 + 史诗级韭菜人格分析 + Java 环境准备）
 
 > **给执行安装的 Agent**：按本文档步骤完成安装。每一步**先执行、再判断**，不要凭推理假设成功。
 > 路径含空格或中文时一律加引号。失败时按"失败处理"走，不要自行改下载地址。
@@ -19,9 +19,11 @@ https://raw.githubusercontent.com/walkvoid/dshworkspace/main/SKILL_INSTALL_GUIDE
 | --- | --- | --- | --- |
 | 金融看板 | DSH 插件 bundle | 右侧栏 + 左侧栏的行情面板、K 线、自选股；依赖 DSH 的 `plugin_manager` | DSH 宿主才装 |
 | 史诗级韭菜 | 技能（2 个目录） | `/9c`、`/shichijijiucai` 人格分析技能 | 必装 |
+| Java 环境准备 | 技能（1 个目录） | 「Java 程序员技能包」第 1 个模块 `/java-env-prep`：把资料里的库、各环境、nacos、仓库变成能开工的机器 | Java 项目装 |
 | iFinD 数据源 | 第三方技能（可选） | 同花顺 MCP，提供行情兜底与交叉校验 | 可选，需密钥 |
 
-两个技能都依赖仓库里的 `scripts/` 和 `data/`（两千多行），**所以仓库本身必须留在磁盘上**，不能只拷 SKILL.md。
+史诗级韭菜的两个技能依赖仓库里的 `scripts/` 和 `data/`（两千多行），**所以仓库本身必须留在磁盘上**，不能只拷 SKILL.md。
+`java-env-prep` 是自包含的（逻辑都在技能目录自己的 `scripts/` 里），但它同样从仓库安装、同样留在技能根目录下。
 
 ---
 
@@ -83,11 +85,75 @@ node "<仓库路径>/scripts/install-skills.mjs" --root "<技能根目录>" --mo
 
 - `--mode copy`：复制技能并写入 `repo.txt`（仓库绝对路径），换机器、换目录都能跑；
 - `--mode link`：建目录联接/符号链接，指向仓库，改仓库即时生效（本机自用更省事）；
+- `--skills <a,b>`：只装指定技能。**默认只装 `9c,shichijijiucai`**，装 Java 环境准备要显式指定（见第 2.5 步）；
 - `--force`：目标已存在时覆盖。
 
 **成功判定**：脚本输出 `results[].status` 为 `copied` 或 `linked`，且 `<技能根目录>/9c/SKILL.md`、`<技能根目录>/shichijijiucai/SKILL.md` 存在。
 
 **失败处理**：`status: failed` 时会带原因——目标已存在就加 `--force`；技能不存在说明仓库不完整，回到第 1 步。
+
+---
+
+## 第 2.5 步：安装「Java 程序员技能包 · 环境准备」（Java 项目装）
+
+技能目录名 `java-env-prep`，是本仓库「Java 程序员技能包」的第 1 个模块。它把一份写着数据库连接、
+各环境 URL、nacos / nexus 地址、git 仓库地址的资料（Word、Excel、截图、聊天记录都行），变成一串已执行的动作：
+生成数据库 MCP 配置、拉取 nacos 配置、写浏览器书签、克隆仓库、生成取日志脚本。
+
+**什么时候装**：用户是 Java 后端，或明说"帮我准备开发环境""配一下环境"。它与「史诗级韭菜」互不影响，
+不装也不影响第 3 步的看板。
+
+**不用另选目录**——复用第 2 步定下的同一个技能根目录，只是多给一个 `--skills`：
+
+```bash
+node "<仓库路径>/scripts/install-skills.mjs" --root "<技能根目录>" --skills java-env-prep --mode copy
+```
+
+> 安装脚本的默认技能列表是 `9c,shichijijiucai`，**漏掉 `--skills java-env-prep` 会什么都不装**。
+
+**成功判定**：`results[].status` 为 `copied` 或 `linked`，且这三处都存在：
+
+```
+<技能根目录>/java-env-prep/SKILL.md
+<技能根目录>/java-env-prep/scripts/env-prep.mjs
+<技能根目录>/java-env-prep/references/profile-schema.md
+```
+
+**失败处理**：`status: failed` 时按 `reason` 走——目标已存在就加 `--force`；
+报"仓库里没有这个技能"说明仓库不完整，回到第 1 步。
+
+装进来的是这些：
+
+| 路径 | 作用 |
+| --- | --- |
+| `SKILL.md` | 执行流程（抽 profile → 校验 → 出计划 → 执行 → 收尾）与安全红线 |
+| `scripts/env-prep.mjs` | 唯一的可执行体：`validate` / `plan` / `infer` / `apply`，默认 dry-run，只有 `apply` 有副作用 |
+| `references/profile-schema.md` | `env-profile.json` 的字段定义；`references/actions.md` 是五类动作的细节 |
+| `references/roadmap.md` | 技能包七模块路线图（当前只有本模块落地） |
+| `templates/env-profile.example.json` | 手写 profile 时的骨架 |
+
+**运行前置**：Node >= 18、`git`（克隆仓库要用）。写浏览器书签额外要求 Chromium 系浏览器
+（Chrome / Edge / Brave）；浏览器正在运行时会退回"导出 HTML 手动导入"。进程检测与关闭用的是
+`tasklist` / `taskkill`，**这条路径是 Windows 专用**。
+
+**它会产生的副作用**（执行 `apply` 前必须先把 `plan` 给用户确认）：
+
+- 克隆的仓库落在 `<工作目录>/project/<项目名>/`，配置与备份落在 `<工作目录>/project/<项目名>/.env-prep/`；
+- 数据库 MCP 片段默认**自动并入** `~/.dsh/profiles/*/cordis.patch.yml`（按 id 去重、写前备份、注释块包裹），
+  **重启 DSH** 后数据库工具（`mcp__mysql_<id>__*`）才出现；不想自动写入就加 `--no-mcp-apply`；
+- 书签按"项目名 / 环境·配置中心·制品库·日志"三层写入，写前备份到 `<out>/bookmarks/*.bak.json`。
+
+仓库的 `.gitignore` 已忽略 `/project/` 与 `.env-prep/`，克隆下来的代码和凭据不会被误提交；profile 本身也不要提交。
+密码只以 `***` 出现，**不要试连、不要扫描内网**。
+
+**自检**（无副作用）：
+
+```bash
+node "<技能根目录>/java-env-prep/scripts/env-prep.mjs"
+```
+
+打印出 `用法：env-prep.mjs <validate|plan|apply|infer> <profile.json> [选项]` 即脚本可用。
+**不带参数时退出码是 1，属正常现象**，不要当失败。
 
 ---
 
@@ -222,13 +288,17 @@ node --test "<仓库路径>/data/test/contract.test.mjs"
 
 # 4) 接入 iFinD 后，双源核对
 node "<仓库路径>/scripts/verify-quotes.mjs"
+
+# 5) 装了 Java 环境准备时，脚本能跑起来（无参数打印用法，退出码 1 属正常）
+node "<技能根目录>/java-env-prep/scripts/env-prep.mjs"
 ```
 
 - 第 1 项返回 `"ok": true` 且 `quote.price` 是数字 → 通过；
 - 第 3 项 `pass` 等于 `tests` → 通过；
-- 第 4 项仅在第 4 步完成时执行，`全部通过` → 通过。
+- 第 4 项仅在第 4 步完成时执行，`全部通过` → 通过；
+- 第 5 项仅在第 2.5 步完成时执行，打印出用法即通过。
 
-**技能是否被宿主发现**：多数宿主需要重启或重新加载技能。装完提示用户"若 `/9c` 不可用，先重启一次"。
+**技能是否被宿主发现**：多数宿主需要重启或重新加载技能。装完提示用户"若 `/9c` 或 `/环境准备` 不可用，先重启一次"。
 
 ---
 
@@ -240,6 +310,7 @@ node "<仓库路径>/scripts/verify-quotes.mjs"
 技能目录：<技能根目录>（模式：copy / link）
   9c            ：已安装 / 失败（原因）
   shichijijiucai：已安装 / 失败（原因）
+  Java 环境准备  ：已安装 / 跳过（非 Java 项目）/ 失败（原因）
 金融看板        ：已安装（applied）/ 跳过（非 DSH）/ 失败（原因）
 iFinD           ：已接入（自检通过，密钥 ***）/ 未接入 / 失败（原因）
 数据层自检      ：通过（价格 xx.xx）/ 未通过（原因）
@@ -255,6 +326,10 @@ iFinD           ：已接入（自检通过，密钥 ***）/ 未接入 / 失败�
 | 现象 | 处理 |
 | --- | --- |
 | `/9c` 不出现 | 确认技能根目录是否为本宿主扫描的目录；重启宿主；检查 `SKILL.md` 的 `name` 是否仍为 kebab-case |
+| `/环境准备` 不出现 | 大概率是没装：默认只装 `9c,shichijijiucai`，要补一次 `--skills java-env-prep`；装了就重启宿主 |
+| 环境准备说"缺少 project / host / url" | 先 `validate`，`problems` 非空就补资料；只缺库名可用 `infer` 从 nacos 配置推断 |
+| 书签没进浏览器 | 浏览器在运行：改 `--bookmark-mode html` 导出后手动导入；备份在 `<out>/bookmarks/` |
+| 环境准备后数据库工具没出现 | MCP 片段写在 `~/.dsh/profiles/*/cordis.patch.yml`，**重启 DSH** 才加载；或检查是否加了 `--no-mcp-apply` |
 | 技能里说"找不到数据脚本" | `repo.txt` 内容是否指向正确仓库；或仓库被移动，重新跑一次 `install-skills.mjs` |
 | 看板空白 / 无数据 | 插件 host 侧改动需重启 DSH；确认能访问 `qt.gtimg.cn` |
 | iFinD 自检 401 | 密钥不完整或过期，重新获取 |
@@ -267,5 +342,7 @@ iFinD           ：已接入（自检通过，密钥 ***）/ 未接入 / 失败�
 ## 边界说明
 
 - 本仓库代码为 MIT，可自由使用；**iFinD 技能包属于第三方**，不随仓库分发。
+- 环境准备的 `apply` 会**写浏览器书签、克隆仓库、改 `~/.dsh/profiles` 的 `cordis.patch.yml`**——都是有副作用的动作，
+  必须先跑 `plan` 让用户确认，再执行。
 - 所有数据来自公开接口或你的授权账号，仅限个人自用，不要对外转售或再分发。
 - 人格分析输出为**方法论模拟**，不构成投资建议。
