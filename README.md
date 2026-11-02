@@ -65,7 +65,7 @@ const r = await get({ kind: 'quote', instrument: 'hk:02318' });
 | 身份 | `data/instruments.mjs` | `cn:601318` / `hk:02318` 解析，拒绝裸代码歧义 |
 | 缓存 | `data/cache.mjs` | TTL + LRU 上限；过期条目保留给 stale 读取 |
 | 错误 | `data/errors.mjs` | `ProviderError` 与稳定错误码 |
-| 上游 | `data/providers/*.mjs` | tencent（A/H 行情、日线、名称搜索、汇率）、eastmoney（A/H 财务与年报、A 股分红）、eastmoney-ann（公告列表 + 港股分红公告解析）、private（私有库 stub） |
+| 上游 | `data/providers/*.mjs` | tencent（A/H 行情、日线、名称搜索、汇率）、eastmoney（A/H 财务与年报、A 股分红）、eastmoney-ann（公告列表 + 港股分红公告解析）、ifind（iFinD MCP 实时快照）、private（私有库 stub） |
 
 支持的数据种类：`quote` `bars` `search` `fundamentals` `dividends` `annual` `fx` `announcements`。
 单只标的作用 `get()`，一组标的（自选股）用 `getMany()`——后者会先向支持批量的 provider
@@ -74,6 +74,22 @@ const r = await get({ kind: 'quote', instrument: 'hk:02318' });
 **港股分红**没有结构化报表，走港交所派息公告解析（`data/dividend-parse.mjs`）：公告正文是固定标签表，
 正则确定性抽取「每股派息 / 宣派币种 / 除净日 / 派息日」，噪声公告按"是否含宣派金额"过滤，
 "(更新)"版按「报告期末 + 股息类型」去重取最新。
+
+**iFinD MCP 接入**：`.dsh/skills/ifind-finance-data` 是官方技能包，`data/providers/ifind.mjs`
+把它的 `call-node.js` 包成 provider。只接了**结构化工具**（`stock_highfreq_quotes` 的
+`real_time` 快照），因为它的财务/港美股工具是自然语言查询，返回列取决于问句，不能进
+需要可复现的数字管线。策略里 `quote` 仍是腾讯优先、iFinD 兜底（免费且能批量，不烧 iFinD 额度）。
+
+两个消费方自动受益：看板走 `getMany()`，人格技能走 `stock-data.mjs`，都吃同一条策略。
+跨源核对用：
+
+```powershell
+node scripts/verify-quotes.mjs              # 默认核对 601318 / 600519
+node scripts/verify-quotes.mjs 601318 000001 --threshold 1
+```
+
+它分别向两个源各取一次（`bypassCache`），逐字段比价格、市盈率、市净率、总市值，
+偏差超阈值即退出码 1——这是"换数据源改坏了"最快的报警方式。
 
 **接入私有数据库**：实现 `data/providers/private.mjs` 的 `fetch()`，在 `capabilities` 里声明
 它能答哪些 kind / market 即可。`policy.mjs` 已经把 `private` 排在财务类第一位，声明后自动生效，
