@@ -19,7 +19,8 @@
 
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
-| `project` | ✅ | 项目名，用于输出目录命名 |
+| `project` | ✅ | 项目名，用于书签文件夹与输出目录。缺失时自动推断：**仓库名公共前缀**（`jasolar-common` → `jasolar`）优先，其次是 **git 组名**（URL 最后一段）。可用 `--project` 覆盖 |
+| `outDir` | — | 输出目录（nacos 配置、MCP 片段、书签备份）。缺省为 `./.env-prep`；建议设成 `<git.dir>/.env-prep`，让代码与资料放在一起（<br>`<工作目录>/project/<项目名>/.env-prep`） |
 | 其余 | — | 都是数组，没有就留空数组 |
 
 ## databases
@@ -56,8 +57,10 @@
 ```
 
 - `url` 写**控制台地址**（带不带 `/nacos` 都行，脚本会拼 `/v1/cs/configs`）；
-- `namespace` 是 nacos 的租户 ID，不是名字——资料里给的是名字时，到控制台换成 ID 再填；
-- `dataIds` 不给全时，先拉 `groups` 下已知的几个，其余让用户补。
+- `namespace` 是 nacos 的租户 ID，不是名字——**能登录时优先自动枚举**（见下）；
+- `dataIds` 不给全时，先拉 `groups` 下已知的几个，其余让用户补；
+- `configs: [{ dataId, group }]`：`infer` 或自动枚举写入的精确清单。配置分散在多个 group 时
+  （常见：`DEFAULT_GROUP` / `rule` / `asset` / `cust`），必须按成对拉取，否则会 404。
 
 ## nexus
 

@@ -10,6 +10,20 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 
 **核心原则：资料里没有的，就问；资料里有的，不猜。**
 
+**交互原则：所有确认都在对话里完成（`ask_user_question`），不要为了等用户输入而新开终端窗口。**
+
+## 目录约定
+
+```
+<工作目录>/project/<项目名>/              # git.dir：各仓库平铺在这里
+<工作目录>/project/<项目名>/.env-prep/    # outDir：nacos 配置、MCP 片段、书签备份
+```
+
+`project/` 这一层是**隔离层**：所有克隆下来的代码与凭据都收在它下面，`.gitignore` 只忽略
+`/project/` 一条即可，不需要为每个项目单独加规则。
+
+这两个路径写在 profile 的 `git.dir` 和 `outDir` 里，脚本不再依赖当前工作目录。
+
 ## 〇、怎么触发
 
 三种都行，效果一样：
@@ -67,6 +81,31 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 - 图片里的信息，逐项核对后再写，看不清的标 `"<待确认>"`；
 - 抽完把「你从资料里读到了什么」列给用户确认，再往下走。
 
+### 第 1.5 步：确认项目名（只在对话框里问）
+
+项目名决定书签文件夹名和输出目录。默认**从仓库前缀推断**：
+
+```
+jasolar-common / jasolar-gateway / jasolar-batch …  →  jasolar（27/28 命中）
+```
+
+没有仓库前缀时退回 git 组名（URL 最后一段，如 `scfp`）。
+
+**不要为了确认去开终端窗口。** 确认一律走对话：
+
+1. `ask_user_question` 提两个选项：
+   - **「用「jasolar」」（推荐）**
+   - **「我自己输入」**
+2. 用户选后者 → 再发一个**不带 options** 的问题，让用户直接在输入框里填；
+3. 用户没回答、或回答"随便/默认" → 直接用推断值，**不要反复追问**；
+4. 对话里没有超时机制，所以"30 秒默认"的语义是：**用户没有明确给出名字时就用推断值**。
+
+命令行侧不需要额外操作——脚本会自己推断；只有用户给了自定义名字时才加参数：
+
+```bash
+node scripts/env-prep.mjs plan <env-profile.json> --project my-project
+```
+
 ### 第 2 步：校验
 
 ```bash
@@ -74,6 +113,29 @@ node scripts/env-prep.mjs validate <env-profile.json>
 ```
 
 `problems` 非空先补资料，**不要带着缺失字段往下跑**。
+
+### 第 2.5 步：缺库名时，从 nacos 配置推断
+
+资料常常只给 `IP:端口 + 账号`，不给库名。应用自己的配置里几乎一定有
+`jdbc:mysql://host:port/schema`，所以**先拉配置、再推断**：
+
+```bash
+node scripts/env-prep.mjs apply <env-profile.json> --only nacos --out .env-prep
+node scripts/env-prep.mjs infer <env-profile.json> --out .env-prep
+```
+
+推断规则（固定，避免每次拍脑袋）：
+
+1. 抽 `jdbc:mysql://…/schema`，**跳过 `${…}` 占位符**（未解析的不算证据）；
+2. 某条库的 `host:port` 能对上 JDBC 里的 host → 直接用那个 schema；
+3. 对不上 → 取「带项目前缀 + 引用次数最多」的 schema 作为默认；
+4. 一个 MySQL 实例上通常有多个 schema，自动推断只是**候选**——能确定就显式覆盖：
+
+```bash
+node scripts/env-prep.mjs infer <env-profile.json> --database jasolar_business_common
+```
+
+`infer` 会把结果写回 profile，并打印候选清单（`topSchemas`），供你复核。
 
 ### 第 3 步：出计划，给用户看
 
@@ -90,7 +152,7 @@ node scripts/env-prep.mjs plan <env-profile.json>
 node scripts/env-prep.mjs apply <env-profile.json> --only bookmark,clone,nacos,mcp,logs
 ```
 
-- 默认输出到当前目录的 `.env-prep/`，可用 `--out` 改；
+- 默认输出到 profile 的 `outDir`（没设就是当前目录的 `.env-prep/`），可用 `--out` 改；
 - 单个动作失败不阻断其他动作，最后看 `results[].ok`；
 - 密码在输出里永远是 `***`。
 
@@ -99,8 +161,28 @@ node scripts/env-prep.mjs apply <env-profile.json> --only bookmark,clone,nacos,m
 | 情况 | 结果 |
 | --- | --- |
 | Chrome/Edge/Brave 已退出 | 直接写 `Bookmarks`，先备份到 `<out>/bookmarks/*.bak.json`，按 URL 去重，重复执行不会重复添加 |
-| 浏览器正在运行 | **不碰文件**（退出时会被内存里的书签树覆盖），改导出 `<out>/bookmarks/<项目名>-bookmarks.html` |
+| 浏览器正在运行 | 先问用户能否关闭（见下），允许并关闭后写文件；否则导出 `<out>/bookmarks/<项目名>-bookmarks.html` |
 | 没有 Chromium 系浏览器 | 同上，导出 HTML |
+
+**关闭浏览器的确认（也在对话里问，不开窗口）**：
+
+1. `ask_user_question` 问：**「关闭 Chrome 并写入书签」/「不关，导出 HTML 让我手动导入」**；
+2. 用户点「关闭」→ 执行时带 `--close-browser --force-close`，脚本直接关，**不需要终端**；
+3. 用户点「不关」→ 只带 `--bookmark-mode html`，导出一份可导入的文件；
+4. 用户没回答 → 按"不关"处理（导出 HTML），**不要擅自关掉别人的浏览器**。
+
+```bash
+# 对话里已确认关闭
+node scripts/env-prep.mjs apply <profile> --only bookmark --bookmark-mode file \
+  --close-browser --force-close
+
+# 用户选择不关
+node scripts/env-prep.mjs apply <profile> --only bookmark --bookmark-mode html
+```
+
+> 脚本里还保留了一条"终端倒计时"路径（`--close-browser --confirm-timeout 30`），
+> 只有在**你自己开终端敲命令**时才有意义；Agent 调用时一律用 `--force-close`，
+> 不要为了倒计时而新开 cmd/powershell 窗口。
 
 可用 `--bookmark-mode file|html` 强制指定。导入 HTML：浏览器「书签管理器 → 导入书签」。
 

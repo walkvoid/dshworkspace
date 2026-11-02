@@ -11,3 +11,6 @@ Thumbs.db
 # Environment-prep output holds database and nacos credentials in clear text.
 .env-prep/
 *.env-profile.json
+
+# Cloned project workspaces (repos + their .env-prep) never belong to this repo.
+/project/

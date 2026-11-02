@@ -45,6 +45,40 @@ GET  /nacos/v1/cs/configs?dataId=&group=&tenant=&accessToken=
 - 落盘文件名 `group__dataId`，避免不同 group 同名覆盖；
 - v2 接口（`/nacos/v2/cs/config`）结构不同，v1 失败时再手工确认，不盲目重试。
 
+### 命名空间与 group 不用手填
+
+有账号密码时，脚本能自己问出来：
+
+```
+POST /v1/auth/login                              -> accessToken
+GET  /v1/console/namespaces?accessToken=…        -> [{namespace, namespaceShowName, configCount}]
+GET  /v1/cs/configs?search=accurate&tenant=<id>  -> pageItems[].{dataId, group}
+```
+
+两个容易踩的点：
+
+1. **namespace 是 UUID，不是名字**——`jasolar-dev` 只是 `namespaceShowName`，真正要传的是 `8d2c6b5d-…`；
+2. **配置分散在多个 group**——本项目的 35 条配置分布在 `DEFAULT_GROUP` / `rule` / `asset` / `cust`。
+   按 `dataId × groups` 的笛卡尔积去拉会命中一批 404，必须按 `(dataId, group)` 成对拉。
+
+### 从配置反推数据库名
+
+资料不给库名时，配置里有答案：
+
+```bash
+node scripts/env-prep.mjs infer env-profile.json --out .env-prep
+```
+
+扫描已拉取的 `nacos/**`，抽 `jdbc:mysql://host:port/schema`（跳过 `${…}` 占位符）：
+
+| 情况 | 取值 |
+| --- | --- |
+| 库的 `host:port` 能对上 JDBC 的 host | 用那个 schema |
+| 对不上 | 带项目前缀、引用次数最多的 schema |
+| 结果不满意 | `--database <name>` 显式覆盖 |
+
+一个 MySQL 实例上往往有几十个 schema，自动推断给的是**默认值**，不是真理。
+
 ## 3. URL → 浏览器书签（不是打开标签）
 
 生成结构：
@@ -68,7 +102,25 @@ GET  /nacos/v1/cs/configs?dataId=&group=&tenant=&accessToken=
 ```bash
 node scripts/env-prep.mjs apply env-profile.json --only bookmark
 node scripts/env-prep.mjs apply env-profile.json --only bookmark --bookmark-mode html
+
+# 允许为了写书签关闭浏览器：终端提示等待，30 秒无响应则 taskkill /F
+node scripts/env-prep.mjs apply env-profile.json --only bookmark \
+  --bookmark-mode file --close-browser --confirm-timeout 30
 ```
+
+`--close-browser` 的四条边界：
+
+| 场景 | 行为 |
+| --- | --- |
+| 浏览器已退出 | 直接写文件 |
+| **对话里已确认 + `--force-close`** | 不要求终端，直接 `taskkill /F` 后写入（Agent 的默认路径） |
+| 有 TTY + `--close-browser`（人手工跑） | 打印提示等 30 秒，回 `y` 或超时 → 强制关闭后写入 |
+| 没有确认（无 TTY、无 `--force-close`） | **不杀进程**，退回导出 HTML |
+
+最后一条是刻意的：管道/自动化环境里没有真实的用户授权，替用户杀掉浏览器风险太大。
+
+> 确认应该在对话里完成（`ask_user_question`），**不要为了倒计时去新开 cmd/powershell 窗口**。
+> 倒计时提示只服务于"人在终端里亲手敲命令"这一种场景。
 
 ### 为什么运行中不能直接改
 
