@@ -188,8 +188,9 @@ node scripts/env-prep.mjs apply <profile> --only bookmark --bookmark-mode html
 
 ### 第 5 步：收尾
 
-1. **MCP 片段**：把 `<out>/mcp/<id>.yaml` 的内容并入
-   `~/.dsh/profiles/desktop/cordis.patch.yml`，重启 DSH 后数据库工具才出现（`mcp__mysql_<id>__*`）；
+1. **MCP 片段**：`apply` 默认会**自动并入** `~/.dsh/profiles/*/cordis.patch.yml`（按 id 去重、
+   写前备份、用注释块包裹）。**重启 DSH** 后数据库工具才出现（`mcp__mysql_<id>__*`）。
+   不想自动写入时加 `--no-mcp-apply`，或只跑 `--only mcp` 生成片段；
 2. **日志脚本**：`<out>/logs/fetch-logs-<id>.mjs` 是骨架，按探测出的候选接口补全，
    Cookie 走环境变量 `LOG_PLATFORM_COOKIE`，不要写死在文件里；
 3. **书签**：告诉用户是"已写入浏览器"还是"需要导入 HTML"，以及备份在哪；

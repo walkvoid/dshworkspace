@@ -187,6 +187,74 @@ export function inferDatabases(profile, outDir) {
 }
 
 /**
+ * 定位 DSH 的 patch 文件。
+ *
+ * 优先 `--patch`，其次环境变量 `DSH_PATCH_FILE`，最后在 `~/.dsh/profiles/*` 里找
+ * `cordis.patch.yml`（多个 profile 时优先 `desktop`）。
+ *
+ * @returns 绝对路径，或 `null`（没装 DSH）。
+ */
+export function resolvePatchFile(explicit) {
+  if (typeof explicit === 'string' && explicit !== '') return path.resolve(explicit);
+  if (process.env.DSH_PATCH_FILE) return path.resolve(process.env.DSH_PATCH_FILE);
+  const home = process.env.USERPROFILE ?? os.homedir();
+  const profilesDir = path.join(home, '.dsh', 'profiles');
+  if (!fs.existsSync(profilesDir)) return null;
+  const found = fs
+    .readdirSync(profilesDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(profilesDir, entry.name, 'cordis.patch.yml'))
+    .filter((file) => fs.existsSync(file))
+    .sort((a, b) => (b.includes('desktop') ? 1 : 0) - (a.includes('desktop') ? 1 : 0));
+  return found[0] ?? null;
+}
+
+/**
+ * 把 MCP 片段并入 patch 文件。
+ *
+ * 只做追加：按条目 id 去重，写前备份，用注释块包住，方便整段删除回滚。
+ *
+ * @param patchFile - `cordis.patch.yml` 路径。
+ * @param fragments - 片段文件路径数组。
+ * @param project - 用于注释块标识。
+ * @returns 合并统计。
+ */
+export function mergeMcpIntoPatch(patchFile, fragments, project) {
+  const raw = fs.readFileSync(patchFile, 'utf8');
+  const blocks = [];
+  const skipped = [];
+
+  for (const file of fragments) {
+    if (!fs.existsSync(file)) continue;
+    const body = fs
+      .readFileSync(file, 'utf8')
+      .split('\n')
+      .filter((line) => !line.trimStart().startsWith('#'))
+      .join('\n')
+      .trim();
+    if (body === '') continue;
+    const id = /- id:\s*([A-Za-z0-9_-]+)/.exec(body)?.[1];
+    if (id === undefined) continue;
+    if (new RegExp(`^\\s*-?\\s*id:\\s*${id}\\s*$`, 'm').test(raw)) {
+      skipped.push(id);
+      continue;
+    }
+    blocks.push(body);
+  }
+
+  if (blocks.length === 0) return { patch: patchFile, appended: 0, skipped };
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backup = `${patchFile}.${stamp}.bak`;
+  fs.writeFileSync(backup, raw, 'utf8');
+
+  const header = `\n# >>> java-env-prep: MySQL MCP（${project}，删除本段即可回滚）\n`;
+  const merged = `${raw.replace(/\s*$/, '')}\n${header}${blocks.join('\n')}\n# <<< java-env-prep: MySQL MCP\n`;
+  fs.writeFileSync(patchFile, merged, 'utf8');
+  return { patch: patchFile, backup, appended: blocks.length, skipped };
+}
+
+/**
  * 推断项目名。
  *
  * 优先用仓库名的公共前缀（`jasolar-common`、`jasolar-gateway` -> `jasolar`），
@@ -292,7 +360,7 @@ export async function ensureBrowserClosed(browser, { seconds = 30, allow = false
 }
 
 /** 生成动作清单。 */
-function buildPlan(profile) {
+function buildPlan(profile, options = {}) {
   const actions = [];
 
   if (list(profile, 'hosts').length > 0) {
@@ -330,6 +398,10 @@ function buildPlan(profile) {
   }
   for (const db of list(profile, 'databases')) {
     actions.push({ type: 'mcp', target: db.id, detail: `生成 ${db.kind} 的 MCP 配置片段` });
+  }
+  // 默认把片段并入 DSH 的 patch 文件；没有 DSH 或显式关闭时只生成片段。
+  if (list(profile, 'databases').length > 0 && options.patchFile !== null && options.skipMcpApply !== true) {
+    actions.push({ type: 'mcp-apply', target: profile.project, patch: options.patchFile, detail: `并入 ${options.patchFile}` });
   }
   return actions;
 }
@@ -837,11 +909,14 @@ async function main() {
   const bookmarkMode = modeIndex === -1 ? 'auto' : String(rest[modeIndex + 1] ?? 'auto');
   const allowClose = rest.includes('--close-browser');
   const forceClose = rest.includes('--force-close');
+  const skipMcpApply = rest.includes('--no-mcp-apply');
+  const patchIndex = rest.indexOf('--patch');
+  const patchFile = resolvePatchFile(patchIndex === -1 ? undefined : rest[patchIndex + 1]);
   const timeoutIndex = rest.indexOf('--confirm-timeout');
   const closeTimeout = timeoutIndex === -1 ? 30 : Number(rest[timeoutIndex + 1]) || 30;
   const apply = command === 'apply';
 
-  const plan = buildPlan(profile);
+  const plan = buildPlan(profile, { patchFile, skipMcpApply });
   const selected = only === null ? plan : plan.filter((action) => only.includes(action.type));
 
   const output = { project: profile.project, apply, problems, outDir, plan: selected, results: [] };
@@ -883,6 +958,9 @@ async function main() {
         const file = path.join(dir, `${db.id}.yaml`);
         fs.writeFileSync(file, mysqlFragment(db), 'utf8');
         output.results.push({ ...action, file });
+      } else if (action.type === 'mcp-apply') {
+        const fragments = list(profile, 'databases').map((db) => path.join(outDir, 'mcp', `${db.id}.yaml`));
+        output.results.push({ ...action, ...mergeMcpIntoPatch(action.patch, fragments, profile.project) });
       } else if (action.type === 'logs') {
         const log = list(profile, 'logs').find((item) => item.id === action.target);
         const probed = await probeLogPlatform(log, outDir);

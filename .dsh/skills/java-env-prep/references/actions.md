@@ -21,8 +21,27 @@
     failOnStartupError: false
 ```
 
-**并入方式**：把片段追加到 `~/.dsh/profiles/desktop/cordis.patch.yml`，重启 DSH。
-之后模型能看到 `mcp__mysql_mysql_dev__*` 工具。
+**并入方式**：默认**自动并入** `~/.dsh/profiles/*/cordis.patch.yml`（优先 `desktop`），
+重启 DSH 后模型能看到 `mcp__mysql_<id>__*` 工具。
+
+| 行为 | 说明 |
+| --- | --- |
+| 定位 patch 文件 | `--patch <path>` > `DSH_PATCH_FILE` 环境变量 > `~/.dsh/profiles/*/cordis.patch.yml` |
+| 去重 | 按条目 `id` 判断，已存在就跳过，重复执行不会写两遍 |
+| 备份 | 每次实际写入前生成 `<patch>.<时间戳>.bak` |
+| 回滚 | 删掉 `# >>> java-env-prep: MySQL MCP` 到 `# <<< java-env-prep: MySQL MCP` 之间的整段 |
+| 关闭 | `--no-mcp-apply` 只生成片段不写入；`--only mcp` 同理 |
+
+```bash
+# 默认：生成片段 + 并入
+node scripts/env-prep.mjs apply env-profile.json --only mcp,mcp-apply
+
+# 只生成片段
+node scripts/env-prep.mjs apply env-profile.json --only mcp
+
+# 指定其他 patch 文件
+node scripts/env-prep.mjs apply env-profile.json --only mcp-apply --patch /path/to/cordis.patch.yml
+```
 
 **注意**：
 
