@@ -22,8 +22,11 @@ description: 以 B 站财经 UP 主「史诗级韭菜」的龟龟投资法评估
 | `style.md` | 语气样例、句式、忌语 | 生成表达前必读 |
 | `eval.md` | 评测集与评分表 | 改完人格或框架后回归用 |
 
-数据脚本在仓库根目录 `scripts/stock-data.mjs`。本技能位于 `<仓库根>/.dsh/skills/shichijijiucai/`，
-脚本路径即 `<本目录>/../../../scripts/stock-data.mjs`；若该路径不存在，向上查找含 `scripts/stock-data.mjs` 的目录。
+数据脚本在仓库根目录 `scripts/stock-data.mjs`。**仓库根按下列顺序解析**（装到用户级技能目录后相对路径会断，靠这个兜底）：
+
+1. 本目录下的 `repo.txt` —— `scripts/install-skills.mjs` 以 copy 模式安装时写入的绝对路径；
+2. 本目录的 `../../..` —— 技能位于仓库 `.dsh/skills/` 下时直接可用；
+3. 都不成立 → 告诉用户"找不到数据脚本"并请其确认仓库路径，**不要凭记忆编数字**。
 
 ## 二、执行流程（严格按顺序）
 

@@ -16,7 +16,15 @@ description: 「史诗级韭菜」人格分析的快捷别名，等价于 /shich
 | 3 | `../shichijijiucai/framework.md` | 三因子评分表、阈值、仓位映射 |
 | 4 | `../shichijijiucai/style.md` | 语气样例与忌语 |
 
-数据脚本：仓库根 `scripts/stock-data.mjs`（即 `<本目录>/../../../scripts/stock-data.mjs`）。
+数据脚本：`<仓库根>/scripts/stock-data.mjs`。仓库根的解析顺序见下。
+
+## 仓库位置（安装到别处也不会断）
+
+按顺序解析仓库根：
+
+1. 本目录下的 `repo.txt` —— `scripts/install-skills.mjs` 以 copy 模式安装时写入的绝对路径；
+2. 本目录的 `../../..` —— 技能位于仓库 `.dsh/skills/` 下时直接可用；
+3. 以上都不成立 → 告诉用户"找不到数据脚本"，并请其确认仓库路径，**不要凭记忆编数字**。
 
 ## 不可省略的四步（读文件后仍要照此执行）
 
