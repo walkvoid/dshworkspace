@@ -22,7 +22,9 @@ export const DEFAULT_TTL_MS = {
 
 /** Provider preference per kind; the router tries them left to right. */
 export const DEFAULT_POLICY = {
-  quote: ['tencent'],
+  // Tencent stays first: it is free, batches the whole watchlist and needs no
+  // quota. iFinD is the authoritative fallback when it cannot answer.
+  quote: ['tencent', 'ifind'],
   bars: ['tencent'],
   search: ['tencent'],
   fundamentals: ['private', 'eastmoney'],

@@ -4,3 +4,6 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# Third-party skill config carries an API key; it must never be committed.
+.dsh/skills/*/mcp_config.json

@@ -18,6 +18,7 @@ import { parseInstrument } from './instruments.mjs';
 import { DEFAULT_POLICY, DEFAULT_TTL_MS, KINDS, resolveOrder } from './policy.mjs';
 import { eastmoneyProvider } from './providers/eastmoney.mjs';
 import { eastmoneyAnnProvider } from './providers/eastmoney-ann.mjs';
+import { ifindProvider } from './providers/ifind.mjs';
 import { privateProvider } from './providers/private.mjs';
 import { tencentProvider } from './providers/tencent.mjs';
 
@@ -63,7 +64,7 @@ export function clearCache() {
 /** Expose the cache size for health checks. */
 export const cacheSize = () => cache.size;
 
-for (const provider of [tencentProvider, eastmoneyProvider, eastmoneyAnnProvider, privateProvider]) {
+for (const provider of [tencentProvider, eastmoneyProvider, eastmoneyAnnProvider, ifindProvider, privateProvider]) {
   registerProvider(provider);
 }
 
@@ -155,7 +156,9 @@ export async function get(request) {
   }
 
   const cacheKey = cacheKeyFor(kind, subject, options);
-  const cached = cache.read(cacheKey);
+  // `bypassCache` exists for cross-source verification: two providers must each
+  // answer the same question without the first one's cached value leaking in.
+  const cached = request.bypassCache === true ? undefined : cache.read(cacheKey);
   if (cached?.fresh === true) {
     return {
       ok: true,

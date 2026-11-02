@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { get, getMany, clearCache, listProviders, registerProvider } from '../index.mjs';
 import { parseInstrument, toSecuCode } from '../instruments.mjs';
 import { parseHkDividend, toHkDividendRows } from '../dividend-parse.mjs';
+import { tableRows, toQuote as toIfindQuote } from '../providers/ifind.mjs';
 import { parseBars, parseFx, parseQuoteText, parseSmartbox } from '../providers/tencent.mjs';
 import {
   parseAnnual,
@@ -348,6 +349,30 @@ test('dividend rows dedupe updated announcements and drop incomplete ones', () =
   assert.equal(rows[0].currency, 'RMB');
 });
 
+test('ifind table rows map onto the shared quote shape', () => {
+  const payload = fixtureJson('ifind-quote-cn.json');
+  const rows = tableRows(payload);
+  assert.equal(rows.length, 2);
+
+  const quote = toIfindQuote(rows[0]);
+  assert.equal(quote.instrument, 'cn:sh601318');
+  assert.equal(quote.name, '中国平安');
+  assert.equal(quote.currency, 'CNY');
+  assert.equal(quote.price, 53.12);
+  // The service reports market value in yuan; the layer speaks 亿元.
+  assert.equal(quote.totalCapYi, 9618.78);
+  assert.equal(quote.peTtm, 9.75862046);
+  assert.equal(quote.pb, 0.921103);
+  // Previous close is derived from the percentage change.
+  assert.equal(quote.prevClose, 52.8);
+});
+
+test('ifind rows without a price are dropped instead of guessed', () => {
+  const payload = { data: { tables: [['证券代码', '证券简称', '最新价'], ['601318.SH', '中国平安', '']] } };
+  const quote = toIfindQuote(tableRows(payload)[0]);
+  assert.equal(quote, null);
+});
+
 test('the default registry exposes capability declarations', () => {
   const providers = listProviders();
   const names = providers.map((provider) => provider.name);
@@ -361,6 +386,9 @@ test('the default registry exposes capability declarations', () => {
   const announcements = providers.find((provider) => provider.name === 'eastmoney-ann');
   assert.ok(announcements.kinds.includes('dividends'), 'Hong Kong dividends come from announcements');
   assert.ok(announcements.kinds.includes('announcements'));
+  const ifind = providers.find((provider) => provider.name === 'ifind');
+  assert.deepEqual(ifind.kinds, ['quote'], 'only the structured iFinD tool is wired');
+  assert.deepEqual(ifind.markets, ['cn']);
   const privateProvider = providers.find((provider) => provider.name === 'private');
   assert.deepEqual(privateProvider.kinds, [], 'the private provider must claim nothing until configured');
 });
