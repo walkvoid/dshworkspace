@@ -24,7 +24,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const SKILLS_DIR = path.join(REPO_ROOT, '.dsh', 'skills');
 
 /** 默认安装全部技能。 */
-const DEFAULT_SKILLS = ['9c', 'shichijijiucai'];
+const DEFAULT_SKILLS = ['9c'];
 
 /** copy 模式下写入技能目录、用于定位仓库的文件。 */
 const REPO_MARKER = 'repo.txt';

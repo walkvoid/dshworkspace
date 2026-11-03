@@ -9,7 +9,7 @@ DeepSeek Harness（DSH）插件集合。每个子目录都是一个可直接安�
 （或其 raw 地址）交给目标机器上的 Agent，它会自动完成下面几步——
 
 1. 克隆仓库到固定位置；
-2. 用 `scripts/install-skills.mjs` 把 `/9c`、`/shichijijiucai` 装进技能目录（copy 会写 `repo.txt` 兜底路径，link 用目录联接）；
+2. 用 `scripts/install-skills.mjs` 把 `/9c`（`/史诗级韭菜` 为同一技能的触发词）装进技能目录（copy 会写 `repo.txt` 兜底路径，link 用目录联接）；
 3. 在 DSH 里通过 `plugin_manager` 安装金融看板；
 4. 可选：弹一个二选一（「不要（跳过）」/「要，我提供密钥」）；选「要」则装第三方技能包、写入密钥并自检。
 
@@ -30,24 +30,20 @@ DeepSeek Harness（DSH）插件集合。每个子目录都是一个可直接安�
 
 | 路径 | 说明 |
 | --- | --- |
-| [`.dsh/skills/shichijijiucai/`](./.dsh/skills/shichijijiucai/SKILL.md) | 人格技能：`/9c 中国平安` 触发，流程固定为 解析 → 取数 → 三因子填表 → 硬规则 → 输出 |
-| [`.dsh/skills/9c/`](./.dsh/skills/9c/SKILL.md) | 短别名：转发到上面那份人格资产，不复制内容 |
+| [`.dsh/skills/9c/`](./.dsh/skills/9c/SKILL.md) | 人格技能：`/9c 中国平安` 或 `/史诗级韭菜 中国平安` 触发，流程固定为 解析 → 取数 → 三因子填表 → 硬规则 → 输出 |
 | [`scripts/stock-data.mjs`](./scripts/stock-data.mjs) | 数据接地：腾讯行情 + 东财 F10 财务/分红，算股息率、最低派息率、穿透回报率、现金流代理 |
 
 用法（DSH 会自动发现项目根 `.dsh/skills`，无需重启）：
 
 ```text
 /9c 中国平安这个股票如何
-/shichijijiucai 中国平安
+/史诗级韭菜 中国平安
 用龟龟法看看 601318
 ```
 
-技能名必须是 kebab-case，所以真正的斜杠命令是 `/9c` 与 `/shichijijiucai`；
-`/史诗级韭菜` 作为触发词写在技能描述里，模型会据此加载同一份指令。
-
-`/9c` 为什么是独立目录：DSH 的 `/name` 调用按技能名精确匹配，
-一个技能只能有一个名字，所以短别名做成 `.dsh/skills/9c/`，
-正文只写"转发 + 四步要点"，权威内容仍在 `shichijijiucai/`，两边不会漂移。
+技能名必须是 kebab-case，所以真正的斜杠命令是 `/9c`；`/史诗级韭菜` 作为触发词写在技能描述里，
+模型会据此加载同一份指令。**拼音别名 `/shichijijiucai` 已取消**——DSH 的 `/name` 调用按技能名精确匹配，
+一个技能只能有一个名字，与其维护一份"转发层"，不如把人格资产直接放在 `9c/` 下：只有一处正文，不会漂移。
 
 数据脚本可单独使用：
 
@@ -56,7 +52,7 @@ node scripts/stock-data.mjs all 中国平安
 node scripts/stock-data.mjs resolve 贵州茅台
 ```
 
-新增第二个人格：复制 `.dsh/skills/shichijijiucai/` 为 `.dsh/skills/<新名字>/`，
+新增第二个人格：复制 `.dsh/skills/9c/` 为 `.dsh/skills/<新名字>/`，
 改 `SKILL.md` 的 frontmatter 与 `persona.md`，`scripts/stock-data.mjs` 共用。
 
 ## 数据层（统一取数入口）
