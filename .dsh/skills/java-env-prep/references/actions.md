@@ -76,8 +76,8 @@ GET  /v1/cs/configs?search=accurate&tenant=<id>  -> pageItems[].{dataId, group}
 
 两个容易踩的点：
 
-1. **namespace 是 UUID，不是名字**——`jasolar-dev` 只是 `namespaceShowName`，真正要传的是 `8d2c6b5d-…`；
-2. **配置分散在多个 group**——本项目的 35 条配置分布在 `DEFAULT_GROUP` / `rule` / `asset` / `cust`。
+1. **namespace 是 UUID，不是名字**——`dev` 只是 `namespaceShowName`，真正要传的是 `8d2c6b5d-…`；
+2. **配置分散在多个 group**——同一环境的几十条配置常分布在 `DEFAULT_GROUP` / `rule` / `asset` / `cust`。
    按 `dataId × groups` 的笛卡尔积去拉会命中一批 404，必须按 `(dataId, group)` 成对拉。
 
 ### 从配置反推数据库名

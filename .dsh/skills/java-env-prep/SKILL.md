@@ -83,18 +83,15 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 
 ### 第 1.5 步：确认项目名（只在对话框里问）
 
-项目名决定书签文件夹名和输出目录。默认**从仓库前缀推断**：
+项目名决定书签文件夹名和输出目录。默认**从仓库名推断**，不假设工程怎么命名：
+把每个仓库名按 `-` 切段、取第一段统计，某个第一段覆盖 ≥60% 的仓库时就取它。
 
-```
-jasolar-common / jasolar-gateway / jasolar-batch …  →  jasolar（27/28 命中）
-```
-
-没有仓库前缀时退回 git 组名（URL 最后一段，如 `scfp`）。
+没有公共前缀时退回 git 组名（URL 最后一段）。
 
 **不要为了确认去开终端窗口。** 确认一律走对话：
 
 1. `ask_user_question` 提两个选项：
-   - **「用「jasolar」」（推荐）**
+   - **「用 <推断值>」（推荐）** —— 运行时换成实际推断出的项目名，别照抄占位符
    - **「我自己输入」**
 2. 用户选后者 → 再发一个**不带 options** 的问题，让用户直接在输入框里填；
 3. 用户没回答、或回答"随便/默认" → 直接用推断值，**不要反复追问**；
@@ -132,7 +129,7 @@ node scripts/env-prep.mjs infer <env-profile.json> --out .env-prep
 4. 一个 MySQL 实例上通常有多个 schema，自动推断只是**候选**——能确定就显式覆盖：
 
 ```bash
-node scripts/env-prep.mjs infer <env-profile.json> --database jasolar_business_common
+node scripts/env-prep.mjs infer <env-profile.json> --database <库名>
 ```
 
 `infer` 会把结果写回 profile，并打印候选清单（`topSchemas`），供你复核。
@@ -166,10 +163,16 @@ node scripts/env-prep.mjs apply <env-profile.json> --only bookmark,clone,nacos,m
 
 **关闭浏览器的确认（也在对话里问，不开窗口）**：
 
-1. `ask_user_question` 问：**「关闭 Chrome 并写入书签」/「不关，导出 HTML 让我手动导入」**；
+1. `ask_user_question` 问，**把"关闭"作为推荐项**（放第一个、label 带「推荐」）：
+
+   | 选项 label | 含义 | 用户选了之后 |
+   | --- | --- | --- |
+   | `关闭 Chrome 并写入书签（推荐）` | 直接写进浏览器书签，一次到位 | 带 `--close-browser --force-close`，脚本自己关 |
+   | `不关，导出 HTML 让我手动导入` | 浏览器不动，多一步手动导入 | 只带 `--bookmark-mode html` |
+
 2. 用户点「关闭」→ 执行时带 `--close-browser --force-close`，脚本直接关，**不需要终端**；
 3. 用户点「不关」→ 只带 `--bookmark-mode html`，导出一份可导入的文件；
-4. 用户没回答 → 按"不关"处理（导出 HTML），**不要擅自关掉别人的浏览器**。
+4. 用户没回答 → 按"不关"处理（导出 HTML），**不要擅自关掉别人的浏览器**（推荐 ≠ 默认）。
 
 ```bash
 # 对话里已确认关闭

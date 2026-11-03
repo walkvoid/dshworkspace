@@ -148,7 +148,7 @@ export function inferDatabases(profile, outDir) {
   };
   walk(root);
 
-  // 并列时不能按字母序拍脑袋：先看"项目前缀"（jasolar_xxx 的 jasolar），
+  // 并列时不能按字母序拍脑袋：先看"库名前缀"（同一个项目常是多个同前缀的库），
   // 带项目前缀的库更可能是主库，再比引用次数。
   const prefixCount = new Map();
   for (const item of schemaCount.keys()) {
@@ -257,8 +257,8 @@ export function mergeMcpIntoPatch(patchFile, fragments, project) {
 /**
  * 推断项目名。
  *
- * 优先用仓库名的公共前缀（`jasolar-common`、`jasolar-gateway` -> `jasolar`），
- * 因为团队通常按「项目-模块」命名；没有公共前缀时退回 git 组名（URL 最后一段）。
+ * 优先取仓库名的第一段（按 `-` 切分）作公共前缀，覆盖 ≥60% 时才采用；
+ * 工程怎么命名都行，不假设固定的模块后缀；没有公共前缀时退回 git 组名（URL 最后一段）。
  *
  * @param profile - env-profile。
  * @returns 推断结果与依据。
@@ -506,7 +506,7 @@ export function mergeBookmarks(doc, profile, groups) {
   const newGuid = () => crypto.randomUUID();
 
   const root = doc.roots.bookmark_bar ?? doc.roots.other;
-  // 项目改名后（jasolar-scfp -> jasolar）复用旧文件夹并改名，避免书签栏里出现两个。
+  // 项目改名后（旧名 -> 新名）复用旧文件夹并改名，避免书签栏里出现两个。
   let existing = root.children.find((child) => child.type === 'folder' && child.name === profile.project);
   if (existing === undefined) {
     const legacy = root.children.find(
