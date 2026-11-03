@@ -45,7 +45,7 @@ git clone https://github.com/walkvoid/dshworkspace.git D:\dshworkspace
 | `locale/*.json` | 插件管理中的显示标题与描述（`meta.title` / `meta.description`） |
 | `icon.svg` | 插件图标 |
 
-行情抓取、归一化、缓存与过期兜底都在仓库根目录的 [`data/`](../README.md#数据层统一取数入口) 数据层里；
+行情抓取、归一化、缓存与过期兜底都在仓库根目录的 [`data/`](../README.md#4-数据层统一取数入口) 数据层里；
 本插件通过 `../data/index.mjs` 引用它（安装时是指向仓库的 junction，因此同级目录必须存在）。
 
 ## Host 路由
