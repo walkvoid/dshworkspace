@@ -1,6 +1,6 @@
 ---
 persona: 史诗级韭菜
-slug: shichijijiucai
+slug: 9c
 aliases: [史诗级韭菜, 老韭, 龟龟, 龟龟投资法]
 platform: B 站（财经 UP 主）
 knowledge_cutoff: 2026-06
