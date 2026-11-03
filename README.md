@@ -8,6 +8,7 @@ DeepSeek Harness（DSH）的插件与技能集合：一块能用的**金融看�
 | 金融看板 | DSH 插件 bundle（`financial-dashboard/`） | 左侧栏 / 右侧栏 |
 | 史诗级韭菜 | 技能（`.dsh/skills/9c/`） | `/9c`、`/史诗级韭菜` |
 | Java 环境准备 | 技能（`.dsh/skills/java-env-prep/`） | `/java-env-prep`、`/环境准备` |
+| 项目导览 | 技能（`.dsh/skills/java-project-tour/`） | `/java-project-tour`、`/代码地图` |
 | 数据层 | `data/` + `scripts/` | 以上三者共用 |
 
 ---
@@ -29,6 +30,7 @@ DeepSeek Harness（DSH）的插件与技能集合：一块能用的**金融看�
 | …，安装史诗级韭菜 | 只装 `9c` |
 | …，只安装金融看板 | 只装看板，不装技能 |
 | …，安装史诗级韭菜和环境准备 | `9c` + `java-env-prep` |
+| …，安装项目导览 | 只装 `java-project-tour` |
 | …（不点名） | 技能 + 看板 + 询问是否接 iFinD |
 
 安装过程中的提问——装到用户级还是项目级、要不要接 iFinD 并贴密钥、写书签要不要关浏览器——都会照常问。
@@ -123,10 +125,39 @@ node scripts/stock-data.mjs all hk:02318      # 港股：行情 + 派息公告�
 
 - 默认 dry-run：先 `validate` / `plan`，确认后才 `apply`；
 - 克隆的代码落 `<工作目录>/project/<项目名>/`，仓库 `.gitignore` 只忽略这一条；
+- **克隆后切到「默认分支之外、最新提交」的远端分支**（`active` 策略，按 committerdate；Git 不记录分支创建时间）；
+  想取全部分支里最新的用 `--branch-strategy latest`，想固定在 profile 的 `branch` 用 `--keep-branch`；
+- **只克隆最近 30 天有提交的仓库**（`--max-age` 可调，`--max-age 0` 关闭），长期不动的仓库会被跳过并列出最后提交时间；
 - 写书签要求浏览器退出：会先问「关闭浏览器并写入」还是「导出 HTML 手动导入」，没回答按"不关"处理；
 - 细节见 [`.dsh/skills/java-env-prep/SKILL.md`](./.dsh/skills/java-env-prep/SKILL.md)。
 
-### 2.4 iFinD 数据源（可选）
+### 2.4 项目导览（`/java-project-tour`、`/代码地图`）
+
+在几十个仓库、上万个 Java 文件里，先扫出一份索引，再回答“这个功能在哪、改哪里”：
+
+```text
+/java-project-tour
+/代码地图
+这个项目是干什么的 / 改资产签发要动哪些文件
+```
+
+```bash
+node .dsh/skills/java-project-tour/scripts/tour.mjs scan --project project/<项目>
+```
+
+- 产物在 `<项目根>/.knowledge/`：仓库与依赖（`inventory.json`）、入口（`entries.json`：HTTP / Dubbo / 定时任务 / MQ / Feign）、
+  表读写（`data.json`）、功能点（`features.json`）、业务流程到处理类（`flows/`）；
+- **没有工作流引擎的项目也能用**：`features` 把入口按「HTTP 首段 / 包里的业务包 / 任务名前缀」聚合成功能点，
+  并过滤掉 `getById`、`allList`、`count` 这类通用 CRUD 端点；有流程定义时则一流程一项；
+- **可选：用数据量校验核心功能**：`db queries` 生成只读 SQL（默认走 qa/test 测试库，不碰研发库），把行数存成 JSON 后
+  `db ingest` 推断 5–10 个核心功能，日志/历史/引擎表会被过滤；
+- 实测 30 个仓库、11,555 个 Java 文件，扫描约 30 秒；
+- **核心机制**：`core.json` 标记核心功能点 / 核心流程 / 核心类 / 核心表，后续技能先读 `core.md` 再查全量索引，
+  `find` 命中的核心项带 `★` 并优先排序；
+- 查询：`find <关键词>`、`where "<改动意图>"`、`context <path>`、`status`；
+- 只读：不执行构建、不连库、不改业务代码；细节见 [`.dsh/skills/java-project-tour/SKILL.md`](./.dsh/skills/java-project-tour/SKILL.md)。
+
+### 2.5 iFinD 数据源（可选）
 
 同花顺 MCP，给行情做兜底与交叉校验；不接也能正常用（行情走腾讯）。接入后 `data/providers/ifind.mjs`
 把官方技能包的 `call-node.js` 包成 provider，只吃结构化快照（`stock_highfreq_quotes` 的 `real_time`）。
@@ -141,6 +172,7 @@ node scripts/stock-data.mjs all hk:02318      # 港股：行情 + 派息公告�
 financial-dashboard/       看板插件（bundle 根，含 package.json / cordis.patch.yml）
 .dsh/skills/9c/            人格技能：SKILL.md + persona / framework / style / eval
 .dsh/skills/java-env-prep/ 环境准备技能：SKILL.md + scripts/env-prep.mjs + references/
+.dsh/skills/java-project-tour/ 项目导览技能：SKILL.md + scripts/tour.mjs + references/schema.md
 scripts/                   安装与取数 CLI：install-skills / stock-data / verify-quotes
 data/                      统一取数层：index / policy / instruments / cache / errors / providers
 SKILL_INSTALL_GUIDE.md     写给 Agent 的安装引导（支持点名只装某一块）
