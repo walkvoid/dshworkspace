@@ -128,6 +128,8 @@ node scripts/stock-data.mjs all hk:02318      # 港股：行情 + 派息公告�
 - **克隆后切到「默认分支之外、最新提交」的远端分支**（`active` 策略，按 committerdate；Git 不记录分支创建时间）；
   想取全部分支里最新的用 `--branch-strategy latest`，想固定在 profile 的 `branch` 用 `--keep-branch`；
 - **只克隆最近 30 天有提交的仓库**（`--max-age` 可调，`--max-age 0` 关闭），长期不动的仓库会被跳过并列出最后提交时间；
+- 需要登录的平台（如 AIO 缺陷页、BeeCloud 日志）会生成**自动登录脚本**：探明登录 → 缓存会话 → **懒加载**（用前先验会话，过期自动重登），不需要先手动登录；
+  凭据放 `<项目>/.env-prep/`（已忽略），打法见 [`.dsh/skills/java-env-prep/references/web-login.md`](./.dsh/skills/java-env-prep/references/web-login.md)；
 - 写书签要求浏览器退出：会先问「关闭浏览器并写入」还是「导出 HTML 手动导入」，没回答按"不关"处理；
 - 细节见 [`.dsh/skills/java-env-prep/SKILL.md`](./.dsh/skills/java-env-prep/SKILL.md)。
 
