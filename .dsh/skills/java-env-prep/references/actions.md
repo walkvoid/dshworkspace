@@ -172,12 +172,48 @@ Chrome/Edge 把书签树放在内存里，退出时整体写回文件。运行�
 ## 4. git → clone
 
 ```bash
-git clone [--branch <branch>] <url> <dir>
+# 默认（active）：克隆全部远端分支，再切到「默认分支之外、最新提交」的那条
+git clone --no-single-branch <url> <dir>
+git -C <dir> symbolic-ref --short refs/remotes/origin/HEAD     # 默认分支是谁
+git -C <dir> for-each-ref --sort=-committerdate --format='%(refname:short)|%(committerdate:iso8601)' refs/remotes/origin
+git -C <dir> switch -C <branch> --track origin/<branch>        # 旧版 git 退回 checkout -B
+
+# latest：所有分支里取最新提交（默认分支可能在发布线上更活跃时用）
+# profile：固定分支，不自动切换
+git clone --single-branch --branch <branch> <url> <dir>
 ```
 
-- 目标目录已存在 → 跳过（不删、不覆盖）；
+- **三种策略**：`active`（默认，排除 `origin/HEAD` 指向的默认分支）、`latest`（全部分支）、
+  `profile`（保持 profile 的 `branch`）；`--keep-branch` 是 `profile` 的别名；
+- **为什么用 committerdate**：Git 不存分支创建时间，只能用分支最新提交时间近似；团队功能分支通常最新，
+  默认分支常是发布线（`active` 就是在这个经验上加的规则）。判断结果写进 `results[].branch`
+  （`strategy` / `basis` / `basisNote` / `defaultBranch` / `branch` / `date` / `candidates` / `top`）；
+- 两个已核实的点：`%(creatordate)` 对分支返回的就是最新提交时间（与 `committerdate` 相同）；
+  克隆后远端跟踪分支**没有 reflog**（`git reflog show origin/x` 为空），所以「分支创建时间」拿不到；
+- `active` 的代价：如果最新提交恰好在非默认分支但那条分支已经废弃，会选到它——
+  拿不准时改用 `--branch-strategy latest`，或直接 `--keep-branch`；
+- **只克隆活跃仓库**（默认 `--max-age 30`）：克隆前用
+  `git init --bare <tmp> && git fetch --depth 1 --filter=blob:none <url> +HEAD:refs/heads/probe`
+  探最后提交时间，超过 N 天就跳过，结果里带 `skipped: true` + `lastCommit` + 原因；
+  `--max-age 0` / `--no-age-filter` 关闭。探测不落盘（临时 bare 仓库用完即删），
+  不支持 filter 的服务端自动退回 `--depth 1`；探测失败则照常 clone 并标 `ageUnknown: true`；
+- 只有一条分支、或当前分支就是目标时，不切（`changed: false` + `note`），不要为此报错；
+- 切分支失败（远端没有可跟踪分支、工作区冲突）→ 保留克隆结果，把 `reason` 写进结果，**不要删仓库重来**；
+- `--depth` 会隐含 `--single-branch`，active / latest 策略下脚本额外加 `--no-single-branch`，
+  否则浅克隆只能看到默认分支（`candidates` 会变成 1，切不动）；
+- 目标目录已存在 → 跳过（不删、不覆盖，也就不会切分支）；
 - SSH 失败常见原因：没配 key、host key 未信任。提示用户处理，**不要把密码塞进 URL**；
 - 大仓库超时（默认 5 分钟）时，让用户手动 clone 到同一目录，脚本会跳过。
+
+**已有克隆补切分支**：`env-prep.mjs branch <profile> [--dry-run] [--no-fetch]`
+
+- 遍历 profile 里所有 `git.repos`，逐仓库跑与 clone 相同的选择逻辑；
+- 先 `git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'`；单分支克隆只有默认分支的引用，
+  不 fetch 就永远比不出别的分支。origin 拉不动且 profile 有账号密码时，用**带凭据的 URL 只做这一次 fetch**，
+  不写进 `.git/config`；都失败则标注 `fetch: "failed"`，按旧引用继续判断；
+- 工作区脏（`git status --porcelain` 非空）→ 跳过，**不 stash、不覆盖**；
+- 输出 `summary`（total/switched/already/skipped/failed/fetchFailed）与逐仓库明细；
+- `--dry-run` 只报告 `current → branch` 与候选数，不动工作区。
 
 ## 5. 日志平台 → 探测 + 生成脚本
 

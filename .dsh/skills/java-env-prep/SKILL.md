@@ -52,8 +52,42 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 | 数据库（MySQL 等） | 生成 MCP 配置片段 | `<out>/mcp/<id>.yaml`，按提示并入 DSH `cordis.patch.yml` |
 | nacos | 拉取配置 + 收进书签 | `<out>/nacos/<id>/<group>__<dataId>` |
 | 各环境 URL、nexus | **写入浏览器书签**（项目名文件夹 + 分类） | Chromium 系直接改 `Bookmarks`；运行中退回可导入的 HTML |
-| git 仓库 | `git clone` 到指定目录 | 目标目录 |
+| git 仓库 | `git clone` 到指定目录（**只克隆最近 30 天有提交的仓库**），然后切到“正在开发”的分支 | 目标目录 |
 | 内部日志平台 | 探测接口 + 生成取日志脚本 | `<out>/logs/fetch-logs-<id>.mjs` |
+
+**克隆完切分支（默认行为）**：`git clone` 之后执行一次
+`git for-each-ref --sort=-committerdate refs/remotes/origin`，然后按策略选一条分支
+（`git switch -C <branch> --track origin/<branch>`）：
+
+| 策略 | 选谁 | 适用 |
+| --- | --- | --- |
+| `active`（默认） | **排除远端默认分支**（`origin/HEAD`）后，取最新提交的那条 | 默认分支是发布线，功能分支才是开发面 |
+| `latest` | 全部分支里最新提交的那条 | 默认分支就是主开发线 |
+| `profile` | 不切，保持 profile 的 `branch` / 远端默认分支 | 需要固定在某个发布分支 |
+
+```bash
+--branch-strategy active|latest|profile     # 默认 active
+--keep-branch                               # 等价 --branch-strategy profile
+```
+
+Git 不记录分支创建时间（`%(creatordate)` 对分支就是 tip 时间，克隆后远端分支也没有 reflog），
+所以只能用最新提交时间近似。结果里写明 `strategy` / `defaultBranch` / `from → branch` / `top` 候选，
+**每次切换都报告出来，不要悄悄换分支**。
+
+浅克隆也支持：`--depth` 会隐含 `--single-branch`，active / latest 策略下脚本显式加 `--no-single-branch`，
+每条分支的 tip 时间仍然可用。
+
+**只克隆活跃仓库（默认行为）**：克隆前先探一次远端最后一次提交，**最近 30 天内没有提交的仓库直接跳过**：
+
+```bash
+--max-age 30          # 默认；改天数用这个
+--max-age 0           # 或 --no-age-filter：关闭过滤，全部克隆
+```
+
+- 探测用 `git fetch --depth 1 --filter=blob:none`（只取提交与树，不拉文件内容），**不落盘、不动工作区**；
+  服务端不支持 filter 时自动退回 `--depth 1`；
+- 跳过的仓库在结果里带 `skipped: true`、`lastCommit` 和一行原因，报告时要列出来（别只说"克隆完成"）；
+- 探测失败（网络/权限）→ **照常克隆**并标 `ageUnknown: true`，不因为探不到时间就丢仓库。
 
 书签结构固定为三层：
 
@@ -189,6 +223,22 @@ node scripts/env-prep.mjs apply <profile> --only bookmark --bookmark-mode html
 
 可用 `--bookmark-mode file|html` 强制指定。导入 HTML：浏览器「书签管理器 → 导入书签」。
 
+### 第 4.5 步：给已克隆的仓库补切分支（可选）
+
+clone 阶段会自动切分支；如果目录是**规则改动之前**克隆的（当时还是单分支），用 `branch` 补切：
+
+```bash
+node scripts/env-prep.mjs branch <env-profile.json> --dry-run   # 先看会切到哪条
+node scripts/env-prep.mjs branch <env-profile.json>             # 执行
+node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过，跳过拉取
+```
+
+- 规则与 clone 一致：`active`（排除默认分支取最新提交）/ `latest` / `profile`；
+- 会先 `git fetch` 把远端分支补齐（单分支克隆也能看到其它分支）；需要凭据时用 profile 的账号密码，
+  **只用于那一次 fetch，不写进 `.git/config`**；
+- 工作区有未提交改动 → 跳过该仓库，**不 stash、不覆盖**；
+- 输出逐仓库的 `from → branch`、日期、候选数；`fetch: "failed"` 说明远端没拉全，结论按旧引用算。
+
 ### 第 5 步：收尾
 
 1. **MCP 片段**：`apply` 默认会**自动并入** `~/.dsh/profiles/*/cordis.patch.yml`（按 id 去重、
@@ -196,8 +246,11 @@ node scripts/env-prep.mjs apply <profile> --only bookmark --bookmark-mode html
    不想自动写入时加 `--no-mcp-apply`，或只跑 `--only mcp` 生成片段；
 2. **日志脚本**：`<out>/logs/fetch-logs-<id>.mjs` 是骨架，按探测出的候选接口补全，
    Cookie 走环境变量 `LOG_PLATFORM_COOKIE`，不要写死在文件里；
-3. **书签**：告诉用户是"已写入浏览器"还是"需要导入 HTML"，以及备份在哪；
-4. **告知用户**：哪些动作成功、哪些失败、哪些需要他补信息。
+3. **分支**：逐仓库报告落在哪条分支（`results[].branch`：`from → branch`、`basis`、提交时间）；
+   **跳过的仓库**（长期无提交 / 目录已存在 / 探不到时间）也要列出来，附 `lastCommit` 与原因；
+   切换失败的仓库要单独说明原因，别只说"克隆成功"；
+4. **书签**：告诉用户是"已写入浏览器"还是"需要导入 HTML"，以及备份在哪；
+5. **告知用户**：哪些动作成功、哪些失败、哪些需要他补信息。
 
 ## 三、推断与兜底
 

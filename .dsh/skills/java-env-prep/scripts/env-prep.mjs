@@ -665,18 +665,199 @@ export async function applyBookmarks(profile, outDir, mode = 'auto', options = {
 }
 
 /**
+ * 在已克隆的仓库里切到“正在开发”的远端分支。
+ *
+ * 三种策略：
+ *   active（默认）：排除远端默认分支后，取最新提交的那条——默认分支通常是发布线，功能分支才是开发面；
+ *   latest       ：所有分支里取最新提交（可能选中默认分支）；
+ *   profile      ：不切，保持 profile 的 branch / 远端默认分支。
+ *
+ * Git 不记录分支创建时间，所有策略都只能用分支最新提交时间（committerdate）近似。
+ *
+ * @param dir - 仓库目录。
+ * @param strategy - active | latest。
+ */
+/** 选分支：返回候选、默认分支、目标分支与当前分支，不做任何写操作（dry-run 也用这个）。 */
+function branchPlan(dir, strategy = 'active') {
+  const git = (args) => spawnSync('git', ['-C', dir, ...args], { stdio: 'pipe', timeout: 30_000, encoding: 'utf8' });
+  const listed = git(['for-each-ref', '--sort=-committerdate', '--format=%(refname:short)|%(committerdate:iso8601)', 'refs/remotes/origin']);
+  if (listed.status !== 0) {
+    return { error: (listed.stderr ?? '').trim().split('\n').pop() ?? '读取远端分支失败' };
+  }
+  const branches = (listed.stdout ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [ref, date] = line.split('|');
+      return { branch: ref.replace(/^origin\//, ''), date };
+    })
+    .filter((item) => item.branch && item.branch !== 'HEAD');
+  if (branches.length === 0) return { error: '没有可用的远端分支' };
+
+  const headRef = git(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']);
+  const defaultBranch = headRef.status === 0 ? (headRef.stdout ?? '').trim().replace(/^origin\//, '') : '';
+  const picked = strategy === 'latest'
+    ? branches[0]
+    : (branches.find((item) => item.branch !== defaultBranch) ?? branches[0]);
+  const current = (git(['rev-parse', '--abbrev-ref', 'HEAD']).stdout ?? '').trim();
+  return { git, branches, defaultBranch, picked, current };
+}
+
+function switchToLatestBranch(dir, strategy = 'active') {
+  const plan = branchPlan(dir, strategy);
+  if (plan.error) return { changed: false, reason: plan.error };
+  const { git, branches, defaultBranch, picked, current } = plan;
+  const detail = {
+    strategy,
+    basis: 'committerdate',
+    basisNote: strategy === 'latest'
+      ? 'Git 不记录分支创建时间，已在全部远端分支里取最新提交'
+      : 'Git 不记录分支创建时间，已排除默认分支后取最新提交（默认分支通常是发布线）',
+    defaultBranch: defaultBranch || null,
+    branch: picked.branch,
+    date: picked.date,
+    candidates: branches.length,
+    top: branches.slice(0, 3),
+  };
+  if (current === picked.branch) return { changed: false, ...detail, note: '已在目标分支' };
+
+  let checkout = git(['switch', '-C', picked.branch, '--track', `origin/${picked.branch}`]);
+  if (checkout.status !== 0) {
+    // 旧版 git 没有 switch，退回 checkout -B。
+    checkout = git(['checkout', '-B', picked.branch, `origin/${picked.branch}`]);
+  }
+  if (checkout.status !== 0) {
+    return { changed: false, ...detail, reason: (checkout.stderr ?? '').trim().split('\n').pop() ?? '切换分支失败' };
+  }
+  return { changed: true, from: current, ...detail };
+}
+
+/**
+ * 拉取远端分支。clone 时若是 --single-branch（老版本行为），本地只有默认分支的引用，
+ * 必须先 fetch 才能比较“哪条分支最新”。优先用 origin；需要认证时用 profile 的账号密码
+ * 现拼一个 URL 只用于这一次 fetch（不写进 .git/config）。
+ */
+function fetchBranches(dir, entry, repo, timeout = 30_000) {
+  const env = { ...process.env, GIT_TERMINAL_PROMPT: '0' };
+  const refspec = '+refs/heads/*:refs/remotes/origin/*';
+  const plain = spawnSync('git', ['-C', dir, 'fetch', '--prune', 'origin', refspec], { encoding: 'utf8', timeout, env });
+  if (plain.status === 0) return 'ok';
+  if (!entry.username) return 'failed';
+  try {
+    const cleanUrl = repo.url ?? `${entry.url.replace(/\/$/, '')}/${repo.name}.git`;
+    const parsed = new URL(cleanUrl);
+    parsed.username = encodeURIComponent(entry.username);
+    parsed.password = encodeURIComponent(entry.password ?? '');
+    const authed = spawnSync('git', ['-C', dir, 'fetch', '--prune', parsed.toString(), refspec], { encoding: 'utf8', timeout, env });
+    return authed.status === 0 ? 'ok' : 'failed';
+  } catch {
+    return 'failed';
+  }
+}
+
+/**
+ * 对已克隆的仓库套用分支策略（克隆后规则的手动版）。
+ *
+ * 只切干净的工作区：有未提交改动就跳过，绝不 stash / 覆盖。
+ */
+function switchAllBranches(profile, options = {}) {
+  const strategy = options.branchStrategy ?? 'active';
+  const results = [];
+  for (const entry of list(profile, 'git')) {
+    for (const repo of entry.repos ?? []) {
+      const dir = expandHome(repo.dir ?? path.join(entry.dir, repo.name));
+      const name = repo.name ?? entry.id;
+      if (!fs.existsSync(dir)) {
+        results.push({ repo: name, skipped: true, reason: '目录不存在' });
+        continue;
+      }
+      const status = spawnSync('git', ['-C', dir, 'status', '--porcelain'], { encoding: 'utf8', timeout: 20_000 });
+      if (status.status !== 0) {
+        results.push({ repo: name, ok: false, reason: 'git status 失败' });
+        continue;
+      }
+      if ((status.stdout ?? '').trim() !== '') {
+        results.push({ repo: name, skipped: true, reason: '工作区有改动，跳过' });
+        continue;
+      }
+      let fetch = 'ok';
+      if (options.fetch !== false) fetch = fetchBranches(dir, entry, repo, options.fetchTimeout ?? 30_000);
+      if (options.dryRun) {
+        const plan = branchPlan(dir, strategy);
+        results.push(plan.error
+          ? { repo: name, dryRun: true, fetch, ok: false, reason: plan.error }
+          : { repo: name, dryRun: true, fetch, current: plan.current, branch: plan.picked.branch, date: plan.picked.date, defaultBranch: plan.defaultBranch || null, candidates: plan.branches.length });
+        continue;
+      }
+      results.push({ repo: name, fetch, ...switchToLatestBranch(dir, strategy) });
+    }
+  }
+  const failed = results.filter((item) => item.ok === false || (item.reason && !item.skipped));
+  return {
+    strategy,
+    dryRun: options.dryRun === true,
+    summary: {
+      total: results.length,
+      switched: results.filter((item) => item.changed).length,
+      already: results.filter((item) => item.changed === false && !item.reason).length,
+      skipped: results.filter((item) => item.skipped).length,
+      failed: failed.length,
+      fetchFailed: results.filter((item) => item.fetch === 'failed').length,
+    },
+    results,
+  };
+}
+
+/**
  * 克隆一个仓库。
  *
  * 带凭据时先拼进 URL 完成认证，克隆成功后立刻把 origin 改回无凭据地址，
  * 避免账号密码留在 .git/config 里。
  *
+ * 默认（branchStrategy=active）克隆后切到「默认分支之外、最新提交」的远端分支；
+ * latest 取全部分支里最新的；--keep-branch（branchStrategy=profile）保持 profile 的 branch / 远端默认分支。
+ *
  * @param repo - `{ name, url?, dir?, branch? }`
  * @param entry - 所属的 git 配置项（含 url/dir/depth/username/password）
+ * @param options - `{ branchStrategy }`
  */
-function cloneRepo(repo, entry) {
+/**
+ * 探测远端仓库最后一次提交时间（不落盘、不改工作区）。
+ *
+ * 用 `--filter=blob:none` 的浅取只拉提交与树，不拉文件内容；服务端不支持 filter 时退回 `--depth 1`。
+ *
+ * @returns `{ ok: true, epochMs, iso }` 或 `{ ok: false, reason }`
+ */
+function probeLastCommit(url, timeout = 90_000) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'env-prep-probe-'));
+  try {
+    spawnSync('git', ['init', '-q', '--bare', dir], { stdio: 'ignore', timeout: 15_000 });
+    const refspec = '+HEAD:refs/heads/probe';
+    const fetchOnce = (extra) => spawnSync('git', ['-C', dir, 'fetch', '-q', '--depth', '1', '--no-tags', ...extra, url, refspec], {
+      stdio: 'pipe', timeout, encoding: 'utf8', env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+    });
+    let fetched = fetchOnce(['--filter=blob:none']);
+    if (fetched.status !== 0) fetched = fetchOnce([]);
+    if (fetched.status !== 0) {
+      return { ok: false, reason: (fetched.stderr ?? '').trim().split('\n').filter(Boolean).pop() ?? '探测提交时间失败' };
+    }
+    const log = spawnSync('git', ['-C', dir, 'log', '-1', '--format=%ct|%cI', 'refs/heads/probe'], { encoding: 'utf8', timeout: 15_000 });
+    if (log.status !== 0) return { ok: false, reason: '读取提交时间失败' };
+    const [seconds, iso] = (log.stdout ?? '').trim().split('|');
+    const epochMs = Number(seconds) * 1000;
+    if (!Number.isFinite(epochMs) || epochMs <= 0) return { ok: false, reason: '提交时间不可解析' };
+    return { ok: true, epochMs, iso };
+  } finally {
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* 忽略清理失败 */ }
+  }
+}
+
+function cloneRepo(repo, entry, options = {}) {
   const dir = expandHome(repo.dir ?? path.join(entry.dir, repo.name));
   if (fs.existsSync(dir)) return { ok: true, skipped: true, reason: '目录已存在' };
 
+  const strategy = options.branchStrategy ?? 'active';
   const cleanUrl = repo.url ?? `${entry.url.replace(/\/$/, '')}/${repo.name}.git`;
   let authUrl = cleanUrl;
   if (entry.username) {
@@ -686,11 +867,40 @@ function cloneRepo(repo, entry) {
     authUrl = parsed.toString();
   }
 
+  // 长期无提交的仓库默认不克隆：先探一次最后提交时间（不落盘），过期就跳过。
+  const maxAgeDays = options.maxAgeDays ?? 30;
+  let lastCommit = null;
+  let ageUnknown = false;
+  if (maxAgeDays > 0) {
+    const probe = probeLastCommit(authUrl);
+    if (probe.ok) {
+      lastCommit = probe.iso;
+      const ageDays = (Date.now() - probe.epochMs) / 86_400_000;
+      if (ageDays > maxAgeDays) {
+        return {
+          ok: true,
+          skipped: true,
+          lastCommit,
+          reason: `最近 ${maxAgeDays} 天内没有提交（最后提交 ${probe.iso.slice(0, 10)}），默认不克隆；要拉就加 --max-age 0`,
+        };
+      }
+    } else {
+      ageUnknown = true;
+    }
+  }
+
   fs.mkdirSync(path.dirname(dir), { recursive: true });
-  const args = ['clone', '--single-branch'];
-  if (entry.depth) args.push('--depth', String(entry.depth));
+  const args = ['clone'];
   const branch = repo.branch ?? entry.branch;
-  if (branch && branch !== '<待确认>') args.push('--branch', branch);
+  if (strategy !== 'profile') {
+    // 要能列出全部远端分支才能比时间，所以不能加 --single-branch。
+    // 注意 --depth 默认隐含 --single-branch，这里必须显式关掉，否则只能看到默认分支。
+    args.push('--no-single-branch');
+  } else {
+    args.push('--single-branch');
+    if (branch && branch !== '<待确认>') args.push('--branch', branch);
+  }
+  if (entry.depth) args.push('--depth', String(entry.depth));
   args.push(authUrl, dir);
 
   const result = spawnSync('git', args, { stdio: 'pipe', timeout: 600_000, encoding: 'utf8' });
@@ -701,7 +911,10 @@ function cloneRepo(repo, entry) {
   if (authUrl !== cleanUrl) {
     spawnSync('git', ['-C', dir, 'remote', 'set-url', 'origin', cleanUrl], { stdio: 'ignore', timeout: 15_000 });
   }
-  return { ok: true, dir };
+  if (strategy === 'profile') return { ok: true, dir, lastCommit, ageUnknown };
+
+  const switched = switchToLatestBranch(dir, strategy);
+  return { ok: true, dir, branch: switched, lastCommit, ageUnknown };
 }
 
 /**
@@ -836,7 +1049,7 @@ function maskProfile(profile) {
 async function main() {
   const [command, profilePath, ...rest] = process.argv.slice(2);
   if (!command || !profilePath) {
-    console.log('用法：env-prep.mjs <validate|plan|apply|infer> <profile.json> [选项]');
+    console.log('用法：env-prep.mjs <validate|plan|apply|infer|branch> <profile.json> [选项]');
     console.log('  --only a,b            只执行指定动作（bookmark/clone/nacos/mcp/logs/hosts）');
     console.log('  --out dir             输出目录，默认 ./.env-prep');
     console.log('  --project <name>      覆盖项目名（默认从仓库前缀或 git 组名推断）');
@@ -845,6 +1058,10 @@ async function main() {
     console.log('  --close-browser       允许为写书签关闭浏览器（终端里会提示等待）');
     console.log('  --force-close         同意已在对话里拿到，直接关闭，不再要求终端');
     console.log('  --confirm-timeout 30  关闭浏览器的确认等待秒数，超时强制关闭');
+    console.log('  --branch-strategy <s> active|latest|profile，默认 active：排除默认分支后取最新提交');
+    console.log('  --max-age <days>      只克隆最近 N 天有提交的仓库，默认 30；0 或 --no-age-filter 关闭');
+    console.log('  --keep-branch         保持 profile 里的 branch / 远端默认分支（等价于 --branch-strategy profile）');
+    console.log('  branch <profile>      对已克隆仓库套用分支策略；--dry-run 只预览，--no-fetch 不拉远端');
     process.exitCode = 1;
     return;
   }
@@ -916,6 +1133,29 @@ async function main() {
   const closeTimeout = timeoutIndex === -1 ? 30 : Number(rest[timeoutIndex + 1]) || 30;
   const apply = command === 'apply';
 
+  // 分支策略：默认 active（排除默认分支取最新提交）；--keep-branch / profile 保持原样。
+  const strategyIndex = rest.indexOf('--branch-strategy');
+  const requested = String(rest[strategyIndex + 1] ?? '').toLowerCase();
+  const branchStrategy = rest.includes('--keep-branch') ? 'profile'
+    : (['active', 'latest', 'profile'].includes(requested) ? requested : 'active');
+
+  // 活跃度：默认只克隆最近 30 天有提交的仓库；--max-age 可调，0 / --no-age-filter 关闭。
+  const ageIndex = rest.indexOf('--max-age');
+  const maxAgeDays = rest.includes('--no-age-filter')
+    ? 0
+    : (ageIndex === -1 ? 30 : Math.max(0, Number(rest[ageIndex + 1] ?? 30) || 0));
+
+  // branch：对已克隆的仓库套用分支策略（克隆后规则的手动版）。
+  if (command === 'branch') {
+    const output = switchAllBranches(profile, {
+      branchStrategy,
+      dryRun: rest.includes('--dry-run'),
+      fetch: !rest.includes('--no-fetch'),
+    });
+    console.log(JSON.stringify(output, null, 2));
+    return;
+  }
+
   const plan = buildPlan(profile, { patchFile, skipMcpApply });
   const selected = only === null ? plan : plan.filter((action) => only.includes(action.type));
 
@@ -947,7 +1187,7 @@ async function main() {
       } else if (action.type === 'clone') {
         const entry = list(profile, 'git').find((item) => item.id === action.entryId);
         const repo = (entry.repos ?? []).find((item) => (item.name ?? entry.id) === action.target) ?? { name: action.target };
-        output.results.push({ ...action, ...cloneRepo(repo, entry) });
+        output.results.push({ ...action, ...cloneRepo(repo, entry, { branchStrategy, maxAgeDays }) });
       } else if (action.type === 'nacos') {
         const nacos = list(profile, 'nacos').find((item) => item.id === action.target);
         output.results.push({ ...action, configs: await fetchNacos(nacos, outDir) });
