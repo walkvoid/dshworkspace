@@ -335,6 +335,8 @@ function usage() {
   compile                      把 active+reviewed 的 claim 编译到 knowledge/compiled/
     --claims <file>
     --out <dir>                编译输出目录，默认 knowledge/compiled
+  merge --candidates <file>    把候选 claim 合并进 claims.jsonl（强制 candidate / reviewed:false）
+    --dry-run                  只报告会合并哪些
   prompt --transcript <file>   生成抽取 prompt（不联网）
     --bvid <BV...>             视频号
     --title <title>            视频标题
@@ -421,6 +423,58 @@ function main() {
       ),
     });
     console.log(`已编译 ${compiled.count} 条 active claim -> ${outDir}`);
+    return;
+  }
+
+  if (command === 'merge') {
+    const candidatesFile = flag('candidates');
+    if (candidatesFile === '') {
+      console.error('缺少 --candidates <file>');
+      process.exitCode = 1;
+      return;
+    }
+    const claimsFile = flag('claims', DEFAULT_CLAIMS);
+    const current = validateClaims(claimsFile);
+    if (current.errors.length > 0) {
+      console.error('现有 claim 校验失败，未合并：');
+      for (const message of current.errors) console.error(`ERROR ${message}`);
+      process.exitCode = 1;
+      return;
+    }
+    const candidates = readJsonl(path.resolve(candidatesFile));
+    const ids = new Set(current.claims.map((claim) => claim.id));
+    const statements = new Map(current.claims.map((claim) => [normalizeStatement(claim.statement), claim.id]));
+    const accepted = [];
+    const rejected = [...candidates.errors];
+    for (const { value, line } of candidates.items) {
+      if (ids.has(value.id)) {
+        rejected.push(`第 ${line} 行（${value.id ?? '?'}）：id 已存在，跳过`);
+        continue;
+      }
+      const normalized = { ...value, status: 'candidate', reviewed: false };
+      const result = validateClaim(normalized, { ids, statements });
+      if (result.errors.length > 0) {
+        rejected.push(`第 ${line} 行（${value.id ?? '?'}）：${result.errors.join('；')}`);
+        continue;
+      }
+      accepted.push(normalized);
+    }
+    if (has('dry-run')) {
+      console.log(JSON.stringify({ accepted: accepted.map((claim) => claim.id), rejected, dryRun: true }, null, 2));
+      return;
+    }
+    if (accepted.length > 0) {
+      const raw = fs.readFileSync(claimsFile, 'utf8').replace(/\s*$/, '');
+      try {
+        fs.copyFileSync(claimsFile, `${claimsFile}.bak`);
+      } catch {
+        /* 备份失败不阻断 */
+      }
+      const appended = `${raw}\n${accepted.map((claim) => JSON.stringify(claim)).join('\n')}\n`;
+      fs.writeFileSync(claimsFile, appended, 'utf8');
+    }
+    console.log(JSON.stringify({ accepted: accepted.map((claim) => claim.id), rejected, total: current.total + accepted.length }, null, 2));
+    process.exitCode = rejected.length > 0 ? 2 : 0;
     return;
   }
 

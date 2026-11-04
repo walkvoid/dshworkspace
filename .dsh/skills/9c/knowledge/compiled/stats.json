@@ -1,17 +1,21 @@
 {
-  "generatedAt": "2026-11-04T03:35:22.279Z",
-  "claims": 7,
-  "active": 7,
+  "generatedAt": "2026-11-04T07:19:08.803Z",
+  "claims": 14,
+  "active": 14,
   "byStatus": {
-    "active": 7
+    "active": 14
   },
   "byType": {
-    "rule": 7
+    "rule": 12,
+    "caveat": 1,
+    "definition": 1
   },
   "byDimension": {
-    "risk": 1,
-    "valuation": 2,
-    "portfolio": 3,
-    "business": 1
+    "risk": 2,
+    "valuation": 4,
+    "portfolio": 4,
+    "business": 1,
+    "cashflow": 2,
+    "edge": 1
   }
 }

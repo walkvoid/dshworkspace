@@ -1,0 +1,2 @@
+# 大模型抽取的候选 claim；每行一个 JSON。用 node scripts/knowledge.mjs merge --candidates 这个文件 合并。
+# 示例字段见 claim.schema.json；合并时会强制 status=candidate, reviewed=false。

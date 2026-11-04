@@ -105,6 +105,20 @@ A/H 分开算。人格资产（`persona.md` / `framework.md` / `style.md` / `eva
 `knowledge/compiled/active-claims.md`，runtime 只读这一份；原始转写与 prompt 不提交。流程见
 [`knowledge/README.md`](./.dsh/skills/9c/knowledge/README.md)。
 
+视频 → 文档 → COS 的流水线：
+
+```bash
+node scripts/bili-sync.mjs update            # 从上次同步日期增量更新
+node scripts/bili-sync.mjs list --days 365   # 或首次全量
+node scripts/bili-sync.mjs subtitles --limit 20
+node scripts/bili-sync.mjs docs --api-base https://api.deepseek.com/v1 --api-key "$LLM_API_KEY"
+node scripts/bili-sync.mjs upload --prefix 9c/docs
+```
+
+`/9c update` 就是 `update` 那条维护流程；**COS 不是必需的**，没配置 COS 时文档只落本地
+`knowledge/docs/`，安装技能时也不会要求 COS 密钥。B 站接口不可达时用 `--list-file` 导入列表，
+或设置 `BILI_COOKIE`；没有 LLM key 时只生成 prompt。
+
 > 只维护一个技能名：`/9c` 是真正的斜杠命令，`/史诗级韭菜` 是触发词。拼音别名 `/shichijijiucai` 已取消——
 > DSH 的 `/name` 调用按技能名精确匹配，一个技能只能有一个名字，与其维护转发层，不如让正文只有一处。
 
