@@ -191,14 +191,40 @@ node scripts/env-prep.mjs infer <env-profile.json> --database <库名>
 
 `infer` 会把结果写回 profile，并打印候选清单（`topSchemas`），供你复核。
 
+### 第 2.7 步：缺日志/发布/缺陷平台时，自动探测入口
+
+这三类平台是 Java 项目的“必备三件套”。先看 profile 里有没有，没有就自动探测：
+
+```bash
+node scripts/env-prep.mjs discover <env-profile.json>
+node scripts/env-prep.mjs platforms <env-profile.json>   # 只读已保存结果，不探测
+```
+
+- `discover` 写 `<out>/platforms.json`，并把主入口合并回 `profile.platforms` / `logs` / `release` / `bug`
+  （改 profile 前备份为 `env-profile.json.bak`）；同时更新跨项目登记表 `<工作目录>/project/.platforms.json`；
+- **`apply` 全量执行时，缺平台会自动先跑一次探测**（`--no-discover` 关闭；`--no-probe` / `--no-scan` /
+  `--no-bookmarks` 逐项收紧）；
+- 每个类型给一个主入口 + 至多 3 个 `alternates`，带 `confidence`：
+  `script` > `saved` > `provided` > `suite` > `signature` > `registry` > `bookmark` > `hostname`；
+- 探测到 `tools` / `command` 时直接指向已有站点脚本（BeeCloud 日志、AIO 缺陷），后续不用再找接口；
+- **探不到就落在 `missing`**：报告缺哪一类，带着候选清单问用户要 URL，不要编；
+- 汇报时附一张矩阵：
+
+```text
+平台矩阵
+  日志  BeeCloud  http://beecloud...:1040  script（.tools/beecloud.mjs）  alternates: grafana
+  发布  BeeCloud  http://beecloud...:1040  script
+  缺陷  AIO       https://aio...           script（.aio/aio.mjs）
+```
+
 ### 第 3 步：出计划，给用户看
 
 ```bash
 node scripts/env-prep.mjs plan <env-profile.json>
 ```
 
-计划里会列出：要收藏几个链接、克隆几个仓库、拉几个配置、生成几个 MCP 片段。
-用户确认后再执行——**写书签和克隆仓库都是有副作用的动作**。
+计划里会列出：要收藏几个链接、克隆几个仓库、拉几个配置、生成几个 MCP 片段；
+缺平台时最前面会多一个 `discover` 动作。用户确认后再执行——**写书签和克隆仓库都是有副作用的动作**。
 
 ### 第 4 步：执行
 
@@ -268,12 +294,16 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
    写前备份、用注释块包裹）。**重启 DSH** 后数据库工具才出现（`mcp__mysql_<id>__*`）。
    不想自动写入时加 `--no-mcp-apply`，或只跑 `--only mcp` 生成片段；
 2. **日志脚本**：`<out>/logs/fetch-logs-<id>.mjs` 是骨架，按探测出的候选接口补全，
-   Cookie 走环境变量 `LOG_PLATFORM_COOKIE`，不要写死在文件里；
+   Cookie 走环境变量 `LOG_PLATFORM_COOKIE`，不要写死在文件里；如果平台探测已指向站点脚本
+   （`log.tools`，如 `.tools/beecloud.mjs`），生成的是**转发脚本**，不再重复造轮子；
 3. **分支**：逐仓库报告落在哪条分支（`results[].branch`：`from → branch`、`basis`、提交时间）；
    **跳过的仓库**（长期无提交 / 目录已存在 / 探不到时间）也要列出来，附 `lastCommit` 与原因；
    切换失败的仓库要单独说明原因，别只说"克隆成功"；
-4. **书签**：告诉用户是"已写入浏览器"还是"需要导入 HTML"，以及备份在哪；
-5. **告知用户**：哪些动作成功、哪些失败、哪些需要他补信息。
+4. **书签**：告诉用户是"已写入浏览器"还是"需要导入 HTML"，以及备份在哪；新增的 `发布/`、`缺陷/`
+   分类也要一并说明；
+5. **平台入口**：`<out>/platforms.json` 是后续技能直接读的入口清单（`platforms.log/release/bug`），
+   `project/.platforms.json` 是跨项目登记表（只存 URL 与类型，不含凭据）；`missing` 里的类型要明确告诉用户；
+6. **告知用户**：哪些动作成功、哪些失败、哪些需要他补信息。
 
 ## 三、通用能力：给任意 Web 系统写自动登录脚本
 
@@ -341,11 +371,16 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
    探活接口要“必须登录才能访问且便宜”（如 `/auth/me`），且探活请求体要合法，否则会被误判成过期；
    不要让用户先手动登录，也不要默认排定时任务（需要定时再单独加）。
 6. **沉淀差异**：同一套引擎，只把站点差异（URL、字段名、成功判定、过期码）写进配置。
+7. **给平台探测留钩子**：站点脚本顶部用 `const BASE = 'https://…'` 写站点根地址，文件名与站点一致
+   （`beecloud.mjs` / `aio.mjs` / `jenkins.mjs`）；`env-prep discover` 会**静态读取**它来判断平台类型，
+   **不执行脚本**。一个站点承载多个子平台时（BeeCloud 同时是日志与发布），可以额外提供
+   `<script> platforms` 子命令供人工/后续技能查询子平台清单，探测阶段不会自动调用它。
 
 ## 四、推断与兜底
 
 | 情况 | 处理 |
 | --- | --- |
+| 用户没写日志/发布/缺陷平台 | 先按证据链自动探测；探不到就落在 `missing`，带候选清单问用户要 URL，**不要编** |
 | 给的是日志平台首页 | 探测页面里的 API 线索，命中就生成脚本；没命中就生成"浏览器打开 + 关键字"的说明，并建议抓包 |
 | nacos 有 namespace / group | 都写进 profile；拉取时按 group 逐条取 |
 | 同一环境多套地址（前端/后端/网关） | 各自一条 `environments`，`name` 写清用途 |
@@ -357,10 +392,15 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
 - **密码、令牌不进 git**：`.env-prep/` 写进仓库 `.gitignore`；profile 本身也不建议提交；
 - **不回显**：任何输出只给掩码，命令里不要把密码拼进可打印字符串；
 - **不试连**：没有用户授权不要拿这些凭据去连数据库或登录 nacos（拉配置除外，那是明确要求）；
-- **不越权**：只打开用户给过的地址，不扫描内网。
+- **不越权**：只打开用户给过的地址。平台探测是唯一例外，但必须同时满足：只探 profile 里**已出现过的域名**、
+  候选名来自固定表（beecloud/aio/jenkins/grafana…）、协议与端口来自 profile、默认上限 24 次请求；
+  **不扫 IP 段、不试密码**。`--no-probe` / `--no-scan` 可完全关闭；
+- **书签只读**：平台探测会读 Chrome/Edge/Brave 的 `Bookmarks` 找线索，只读、不上传、不打印无关条目；
+  `--no-bookmarks` 关闭。
 
 ## 六、与其他模块的衔接
 
 本技能是「Java 程序员技能包」的第一块，后续模块见 `references/roadmap.md`：
 项目导览 → 需求分析 → 代码编写 → 单元资产 → bug 修复 → 上下检查。
-环境准备产出的 `env-profile.json` 是后续模块的共同输入（连库、看日志、跑构建都要用）。
+环境准备产出的 `env-profile.json` 是后续模块的共同输入（连库、看日志、跑构建都要用）；
+平台入口另存一份 `<out>/platforms.json`，字段见 `references/profile-schema.md` 的 `platforms` 一节。

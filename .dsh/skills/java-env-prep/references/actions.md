@@ -1,4 +1,4 @@
-# 五类动作的落点与细节
+# 六类动作的落点与细节
 
 ## 1. 数据库 → MCP 配置片段
 
@@ -107,7 +107,9 @@ node scripts/env-prep.mjs infer env-profile.json --out .env-prep
 ├── 环境/       每个 environments 一条
 ├── 配置中心/   nacos 控制台
 ├── 制品库/     nexus
-└── 日志/       内部日志平台
+├── 日志/       内部日志平台
+├── 发布/       发布/流水线平台
+└── 缺陷/       缺陷/项目管理平台
 ```
 
 ### 写入方式
@@ -237,3 +239,91 @@ git clone --single-branch --branch <branch> <url> <dir>
 | Grafana Loki | `GET /loki/api/v1/query_range?query=&start=&end=` |
 | 自研平台 | 多半是 `POST /api/log/search`，带 token |
 | ELK 直连 | `GET /_search?q=` |
+
+## 6. 日志/发布/缺陷平台 → 自动探测入口
+
+真实 Java 项目基本都有这三类平台；用户没写 URL 时不要直接问，先自动找一遍。
+
+```bash
+node scripts/env-prep.mjs discover env-profile.json        # 探测 + 写 platforms.json + 合并回 profile
+node scripts/env-prep.mjs platforms env-profile.json       # 只读已保存结果
+```
+
+`apply` 全量执行时，缺任何一类会自动先跑一次 `discover`（`--no-discover` 关闭）。探测本身**不改工作区**，
+只发少量 GET；找到的结果写盘，供后续命令与技能直接读。
+
+### 证据链
+
+| 顺序 | 来源 | `confidence` | 说明 |
+| --- | --- | --- | --- |
+| 1 | 项目站点脚本 `.tools/*.mjs` / `.aio/*.mjs` | `script` | 静态读 `const BASE = 'https://…'`，**不执行脚本**；命中已知套件或正文关键词就归类 |
+| 2 | `profile.platforms` / `logs` / `release` / `bug` 里 `detected: true` | `saved` | 上一次探测的结果，直接复用 |
+| 3 | 用户显式写的 URL + 名字/备注 | `provided` | 关键词按词边界匹配，`login`/`lowcode` 不会命中 `log` |
+| 4 | 已知套件（`KNOWN_SITES`） | `suite` | BeeCloud=日志+发布、AIO=缺陷、Jenkins=发布、Grafana/Kibana=日志、Jira/禅道/TAPD/Redmine=缺陷、Argo CD=发布 |
+| 5 | 页面特征 | `signature` | 标题/正文命中 `应用观测`/`qaBug`/`DevOps` 等；只用于补类型，不单独定站点 |
+| 6 | 跨项目登记表 | `registry` | `<工作目录>/project/.platforms.json`，同项目或同域复用；只存 URL 与类型，**不含凭据** |
+| 7 | 浏览器书签 | `bookmark` | 只读 Chrome/Edge/Brave 的 `Bookmarks`，按已知套件/同域/关键词筛选，保留文件夹路径作证据 |
+| 8 | 同域候选 | `hostname` | 固定平台名（beecloud/aio/jenkins/grafana/jira…）+ profile 里出现过的协议/端口 |
+
+`environments` 里的平台入口也会被识别（jasolar 的 `beecloud` / `jenkins` 就写在环境里）；
+`nacos`、`nexus`、业务环境按关键词排除，不会因为域名里带 `log` 就误判。
+
+### 打分与产物
+
+同一类型可能有多个候选，按 `confidence` 基础分 + 同域 +15 + 多类型套件 +8 + 探测成功 +5 排序，
+主入口旁边的其他候选最多保留 3 个到 `alternates`。
+
+`<out>/platforms.json`：
+
+```json
+{
+  "schema": 2,
+  "project": "jasolar",
+  "domains": ["jasolar.com"],
+  "platforms": {
+    "log": {
+      "kind": "log", "site": "beecloud", "name": "BeeCloud",
+      "url": "http://beecloud.jasolar.com:1040",
+      "tools": ".tools/beecloud.mjs",
+      "command": "node .tools/beecloud.mjs search --query '<关键字>' --hours 1",
+      "api": "/u5/api/v1/auth/me",
+      "confidence": "script", "auth": "script-managed",
+      "alternates": [{ "site": "grafana", "url": "http://grafana.jasolar.com:1040" }]
+    },
+    "release": { "kind": "release", "site": "beecloud", "url": "http://beecloud.jasolar.com:1040" },
+    "bug": { "kind": "bug", "site": "aio", "url": "https://aio.llschain.com", "tools": ".aio/aio.mjs" }
+  },
+  "missing": [],
+  "sites": [],
+  "attempts": [],
+  "registry": "D:\\github\\dshworkspace\\project\\.platforms.json"
+}
+```
+
+- `api` 只写**真正探到**的接口：401/403/405/3xx 都算“模块在”，404 不算；**不猜 UI 子路径**；
+- `tools` / `command` 指向已生成的站点脚本，`apply --only logs` 会为它生成转发脚本，不再造空骨架；
+- 主入口同时合并回 profile 的 `platforms` / `logs` / `release` / `bug`（写前备份 `env-profile.json.bak`），
+  用户手写的条目不会被覆盖；
+- 探测结果与站点脚本名一起进跨项目登记表，下一个项目可直接复用。
+
+### 安全边界
+
+| 限制 | 默认值 |
+| --- | --- |
+| 只探测 profile 里已出现过的域名 | 是（不扫 IP 段） |
+| 候选名 | 固定表，不做字典扫描 |
+| 协议/端口 | 来自 profile 里已有的 URL |
+| 同域候选请求上限 | 24（`--probe-budget` 可调） |
+| 单请求超时 | 6s / 同域 3.5s / 套件接口 4s |
+| 关闭探测 | `--no-probe`；只关同域候选用 `--no-scan`；不读书签用 `--no-bookmarks` |
+
+### 探不到怎么办
+
+`missing` 里列出缺的类型与已有候选；不要编 URL、不要拿别的项目的入口硬凑。把候选矩阵给用户，
+让他补一个 URL（或确认某个 `alternates`），补完重跑 `discover` 即可。
+
+改完探测逻辑后可跑纯函数自检（不联网、不读写真实 profile）：
+
+```bash
+node scripts/selftest-platforms.mjs
+```

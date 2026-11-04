@@ -1662,7 +1662,7 @@ export function resolveRegistryPath(outDir, explicit) {
 function readRegistry(file) {
   if (!fs.existsSync(file)) return { schema: 1, sites: [] };
   try {
-    const doc = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const doc = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
     return { schema: doc.schema ?? 1, sites: Array.isArray(doc.sites) ? doc.sites : [] };
   } catch {
     return { schema: 1, sites: [] };
@@ -2056,7 +2056,8 @@ export async function discoverPlatforms(profile, outDir, options = {}) {
   if (options.registry !== false) addRegistrySites(registry, profile, domains, store);
 
   let missing = PLATFORM_ORDER.filter((kind) => !hasKind(store, kind));
-  if (options.bookmarks !== false && missing.length > 0) {
+  // 没有任何项目域名时（连业务地址都没给）不读书签：避免把用户别的项目的平台算进来。
+  if (options.bookmarks !== false && missing.length > 0 && domains.size > 0) {
     addBookmarkSites(profile, domains, store, missing);
     missing = PLATFORM_ORDER.filter((kind) => !hasKind(store, kind));
   }
@@ -2132,7 +2133,7 @@ async function main() {
     return;
   }
 
-  const raw = fs.readFileSync(profilePath, 'utf8');
+  const raw = fs.readFileSync(profilePath, 'utf8').replace(/^\uFEFF/, '');
   const profile = JSON.parse(raw);
   const problems = validate(profile);
 
