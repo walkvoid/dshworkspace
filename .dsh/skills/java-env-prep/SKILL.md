@@ -25,8 +25,7 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 ```
 
 `project/` 这一层是**隔离层**：所有克隆下来的代码与凭据都收在它下面，`.gitignore` 只忽略
-`/project/` 一条即可，不需要为每个项目单独加规则。旧项目的 `.tools/`、`.aio/` 会被兼容扫描，
-新产物一律写进 `.env-prep/`。
+`/project/` 一条即可，不需要为每个项目单独加规则；本技能的产物一律写进 `.env-prep/`。
 
 这两个路径写在 profile 的 `git.dir` 和 `outDir` 里，脚本不再依赖当前工作目录。
 
@@ -102,7 +101,7 @@ Git 不记录分支创建时间（`%(creatordate)` 对分支就是 tip 时间，
 
 | 证据 | 说明 |
 | --- | --- |
-| 项目站点脚本 | `.env-prep/tools/<站点>/<站点>.mjs` 里的 `const BASE = 'https://…'`；**只静态读，不执行**（兼容旧布局 `.tools/`、`.aio/`） |
+| 项目站点脚本 | `.env-prep/tools/<站点>/<站点>.mjs` 里的 `const BASE = 'https://…'`；**只静态读，不执行** |
 | profile 已保存 | `platforms` / `logs` / `release` / `bug` 里 `detected: true` 的条目 |
 | 用户提供 | 任何 URL + 名字/备注命中平台关键词（日志/发布/缺陷/构建/Jenkins/Jira…） |
 | 已知套件 | BeeCloud=日志+发布、AIO=缺陷、Jenkins=发布、Grafana=日志、Jira/禅道/TAPD=缺陷 |
@@ -334,7 +333,6 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
 ```
 
 > 同一技能的产物都收在 `.env-prep/`：配置、凭据、平台清单、取数脚本、会话。
-> 旧项目里的 `.tools/`、`.aio/` 仍能被探测识别，但新生成的脚本统一放 `.env-prep/tools/`。
 
 **完成判定**（缺一不算探明成功）：
 

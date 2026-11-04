@@ -109,23 +109,6 @@ test('discoverScriptSites 扫描 .env-prep/tools/<站点>/ 且不执行脚本', 
   }
 });
 
-test('discoverScriptSites 兼容旧布局 .tools / .aio', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'env-prep-scripts-legacy-'));
-  try {
-    fs.mkdirSync(path.join(root, '.tools'), { recursive: true });
-    fs.writeFileSync(
-      path.join(root, '.tools', 'beecloud.mjs'),
-      "const BASE = 'http://beecloud.demo.com:1040';\n",
-      'utf8',
-    );
-    const sites = discoverScriptSites(root);
-    assert.equal(sites.length, 1);
-    assert.equal(sites[0].tools, '.tools/beecloud.mjs');
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
 test('bookmarkItemsFromDoc 保留书签文件夹路径', () => {
   const doc = {
     roots: {
@@ -192,56 +175,6 @@ test('mergePlatformsIntoProfile 写入且幂等', () => {
 
   const again = mergePlatformsIntoProfile(profile, platforms);
   assert.deepEqual(again, []);
-});
-
-test('mergePlatformsIntoProfile 修复搬家后的脚本路径', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'env-prep-migrate-'));
-  try {
-    const newTools = '.env-prep/tools/beecloud/beecloud.mjs';
-    fs.mkdirSync(path.join(root, '.env-prep', 'tools', 'beecloud'), { recursive: true });
-    fs.writeFileSync(path.join(root, newTools), "const BASE = 'http://beecloud.demo.com';\n", 'utf8');
-    const profile = {
-      project: 'demo',
-      platforms: {
-        log: {
-          site: 'beecloud',
-          url: 'http://beecloud.demo.com',
-          tools: '.tools/beecloud.mjs',
-          command: 'node .tools/beecloud.mjs search',
-        },
-      },
-      logs: [
-        {
-          id: 'beecloud',
-          site: 'beecloud',
-          url: 'http://beecloud.demo.com',
-          tools: '.tools/beecloud.mjs',
-          command: 'node .tools/beecloud.mjs search',
-        },
-      ],
-    };
-    mergePlatformsIntoProfile(
-      profile,
-      {
-        log: {
-          kind: 'log',
-          site: 'beecloud',
-          name: 'BeeCloud',
-          url: 'http://beecloud.demo.com',
-          tools: newTools,
-          command: `node ${newTools} search`,
-          confidence: 'script',
-        },
-      },
-      root,
-    );
-    assert.equal(profile.platforms.log.tools, newTools);
-    assert.equal(profile.platforms.log.command, `node ${newTools} search`);
-    assert.equal(profile.logs[0].tools, newTools);
-    assert.equal(profile.logs[0].command, `node ${newTools} search`);
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
 });
 
 test('mergePlatformsIntoProfile 不覆盖用户手写的平台入口', () => {
