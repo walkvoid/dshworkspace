@@ -16,11 +16,17 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 
 ```
 <工作目录>/project/<项目名>/              # git.dir：各仓库平铺在这里
-<工作目录>/project/<项目名>/.env-prep/    # outDir：nacos 配置、MCP 片段、书签备份
+<工作目录>/project/<项目名>/.env-prep/    # outDir：本技能的全部产物
+├── env-profile.json                      # 唯一输入 + 探测结果
+├── nacos/  mcp/  bookmarks/              # 配置、MCP 片段、书签备份
+├── platforms.json                        # 日志/发布/缺陷平台入口
+├── tools/<站点>/<站点>.mjs               # 登录 + 取数脚本、会话
+└── <站点>-credentials.json               # 凭据（git 忽略）
 ```
 
 `project/` 这一层是**隔离层**：所有克隆下来的代码与凭据都收在它下面，`.gitignore` 只忽略
-`/project/` 一条即可，不需要为每个项目单独加规则。
+`/project/` 一条即可，不需要为每个项目单独加规则。旧项目的 `.tools/`、`.aio/` 会被兼容扫描，
+新产物一律写进 `.env-prep/`。
 
 这两个路径写在 profile 的 `git.dir` 和 `outDir` 里，脚本不再依赖当前工作目录。
 
@@ -55,7 +61,7 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 | git 仓库 | `git clone` 到指定目录（**只克隆最近 30 天有提交的仓库**），然后切到“正在开发”的分支 | 目标目录 |
 | 内部日志平台 | 探测接口 + 生成取日志脚本 | `<out>/logs/fetch-logs-<id>.mjs` |
 | **日志/发布/缺陷平台（用户没写入口）** | **自动探测入口并保存**（站点脚本 / 已知套件 / 跨项目登记表 / 书签 / 同域候选） | `<out>/platforms.json` + profile 的 `platforms`/`logs`/`release`/`bug`；跨项目登记表 `<工作目录>/project/.platforms.json` |
-| 需要登录的 Web 系统（缺陷/发布/日志平台…；**资料里任何「网址+账号密码」都算**） | 后台异步探明登录方式，生成**懒加载**自动登录脚本并缓存会话 | `<项目>/.tools/<站点>.mjs`，凭据放 `<项目>/.env-prep/` |
+| 需要登录的 Web 系统（缺陷/发布/日志平台…；**资料里任何「网址+账号密码」都算**） | 后台异步探明登录方式，生成**懒加载**自动登录脚本并缓存会话 | `<项目>/.env-prep/tools/<站点>/<站点>.mjs`，凭据放 `<项目>/.env-prep/` |
 
 **克隆完切分支（默认行为）**：`git clone` 之后执行一次
 `git for-each-ref --sort=-committerdate refs/remotes/origin`，然后按策略选一条分支
@@ -96,7 +102,7 @@ Git 不记录分支创建时间（`%(creatordate)` 对分支就是 tip 时间，
 
 | 证据 | 说明 |
 | --- | --- |
-| 项目站点脚本 | `.tools/*.mjs` / `.aio/*.mjs` 里的 `const BASE = 'https://…'`；**只静态读，不执行** |
+| 项目站点脚本 | `.env-prep/tools/<站点>/<站点>.mjs` 里的 `const BASE = 'https://…'`；**只静态读，不执行**（兼容旧布局 `.tools/`、`.aio/`） |
 | profile 已保存 | `platforms` / `logs` / `release` / `bug` 里 `detected: true` 的条目 |
 | 用户提供 | 任何 URL + 名字/备注命中平台关键词（日志/发布/缺陷/构建/Jenkins/Jira…） |
 | 已知套件 | BeeCloud=日志+发布、AIO=缺陷、Jenkins=发布、Grafana=日志、Jira/禅道/TAPD=缺陷 |
@@ -212,9 +218,9 @@ node scripts/env-prep.mjs platforms <env-profile.json>   # 只读已保存结果
 
 ```text
 平台矩阵
-  日志  BeeCloud  http://beecloud...:1040  script（.tools/beecloud.mjs）  alternates: grafana
+  日志  BeeCloud  http://beecloud...:1040  script（.env-prep/tools/beecloud/beecloud.mjs）  alternates: grafana
   发布  BeeCloud  http://beecloud...:1040  script
-  缺陷  AIO       https://aio...           script（.aio/aio.mjs）
+  缺陷  AIO       https://aio...           script（.env-prep/tools/aio/aio.mjs）
 ```
 
 ### 第 3 步：出计划，给用户看
@@ -295,7 +301,7 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
    不想自动写入时加 `--no-mcp-apply`，或只跑 `--only mcp` 生成片段；
 2. **日志脚本**：`<out>/logs/fetch-logs-<id>.mjs` 是骨架，按探测出的候选接口补全，
    Cookie 走环境变量 `LOG_PLATFORM_COOKIE`，不要写死在文件里；如果平台探测已指向站点脚本
-   （`log.tools`，如 `.tools/beecloud.mjs`），生成的是**转发脚本**，不再重复造轮子；
+   （`log.tools`，如 `.env-prep/tools/beecloud/beecloud.mjs`），生成的是**转发脚本**，不再重复造轮子；
 3. **分支**：逐仓库报告落在哪条分支（`results[].branch`：`from → branch`、`basis`、提交时间）；
    **跳过的仓库**（长期无提交 / 目录已存在 / 探不到时间）也要列出来，附 `lastCommit` 与原因；
    切换失败的仓库要单独说明原因，别只说"克隆成功"；
@@ -322,10 +328,13 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
 每个站点的交付物固定：
 
 ```text
-<项目>/.tools/<站点>.mjs                  # 登录 + 业务取数脚本（懒加载）
-<项目>/.env-prep/<站点>-credentials.json  # 账号密码（git 忽略）
-<项目>/.tools/session.json                # 会话缓存（等同半个密码）
+<项目>/.env-prep/tools/<站点>/<站点>.mjs          # 登录 + 业务取数脚本（懒加载）
+<项目>/.env-prep/<站点>-credentials.json          # 账号密码（git 忽略）
+<项目>/.env-prep/tools/<站点>/session.json        # 会话缓存（等同半个密码）
 ```
+
+> 同一技能的产物都收在 `.env-prep/`：配置、凭据、平台清单、取数脚本、会话。
+> 旧项目里的 `.tools/`、`.aio/` 仍能被探测识别，但新生成的脚本统一放 `.env-prep/tools/`。
 
 **完成判定**（缺一不算探明成功）：
 
@@ -347,8 +356,8 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
 
 ```text
 自动登录矩阵
-  AIO 缺陷平台     ✅ 已探明（OAuth2，脚本 .tools/aio.mjs，会话 reused）
-  BeeCloud 日志    ✅ 已探明（本地账号 JWT，脚本 .tools/beecloud.mjs，会话 reused）
+  AIO 缺陷平台     ✅ 已探明（OAuth2，脚本 .env-prep/tools/aio/aio.mjs，会话 reused）
+  BeeCloud 日志    ✅ 已探明（本地账号 JWT，脚本 .env-prep/tools/beecloud/beecloud.mjs，会话 reused）
   XX 发布平台      ⚠️ 未完成：需要短信验证码（已生成骨架，待人工过一次）
 ```
 
@@ -371,8 +380,8 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
    探活接口要“必须登录才能访问且便宜”（如 `/auth/me`），且探活请求体要合法，否则会被误判成过期；
    不要让用户先手动登录，也不要默认排定时任务（需要定时再单独加）。
 6. **沉淀差异**：同一套引擎，只把站点差异（URL、字段名、成功判定、过期码）写进配置。
-7. **给平台探测留钩子**：站点脚本顶部用 `const BASE = 'https://…'` 写站点根地址，文件名与站点一致
-   （`beecloud.mjs` / `aio.mjs` / `jenkins.mjs`）；`env-prep discover` 会**静态读取**它来判断平台类型，
+7. **给平台探测留钩子**：站点脚本放在 `<项目>/.env-prep/tools/<站点>/<站点>.mjs`，顶部用
+   `const BASE = 'https://…'` 写站点根地址；`env-prep discover` 会**静态读取**它来判断平台类型，
    **不执行脚本**。一个站点承载多个子平台时（BeeCloud 同时是日志与发布），可以额外提供
    `<script> platforms` 子命令供人工/后续技能查询子平台清单，探测阶段不会自动调用它。
 

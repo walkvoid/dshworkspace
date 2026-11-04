@@ -1057,7 +1057,7 @@ async function probeLogPlatform(log, outDir, projectDir = null) {
   const dir = path.join(outDir, 'logs');
   fs.mkdirSync(dir, { recursive: true });
 
-  // 平台探测已经把入口指到站点脚本（如 .tools/beecloud.mjs）：直接转发现成能力。
+  // 平台探测已经把入口指到站点脚本（如 .env-prep/tools/beecloud/beecloud.mjs）：直接转发现成能力。
   if (typeof log.tools === 'string' && log.tools !== '' && projectDir) {
     const toolsAbs = path.resolve(projectDir, log.tools);
     if (fs.existsSync(toolsAbs)) {
@@ -1507,6 +1507,7 @@ function addSite(store, entry) {
       sources: new Set(),
       evidence: [],
       tools: null,
+      toolsSource: null,
       commands: {},
       ruleId: null,
       folders: [],
@@ -1520,7 +1521,11 @@ function addSite(store, entry) {
   for (const kind of entry.kinds ?? []) site.kinds.add(kind);
   if (entry.source) site.sources.add(entry.source);
   for (const note of entry.evidence ?? []) if (!site.evidence.includes(note)) site.evidence.push(note);
-  if (entry.tools && !site.tools) site.tools = entry.tools;
+  // 站点脚本优先于 profile 里保存的旧路径；同一轮里以先扫到的脚本为准（新目录在前）。
+  if (entry.tools && (!site.tools || (entry.source === 'script' && site.toolsSource !== 'script'))) {
+    site.tools = entry.tools;
+    site.toolsSource = entry.source ?? null;
+  }
   if (entry.commands) Object.assign(site.commands, entry.commands);
   if (entry.ruleId && !site.ruleId) site.ruleId = entry.ruleId;
   if (entry.folder) site.folders.push(entry.folder);
@@ -1590,18 +1595,37 @@ function extractScriptBase(text) {
   return match?.[1] ?? null;
 }
 
+/** 列出工具目录里的 .mjs；支持 `tools/<站点>/<站点>.mjs` 这种一层子目录。 */
+function listToolScripts(dir, depth = 1) {
+  if (!fs.existsSync(dir)) return [];
+  const files = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.endsWith('.mjs')) {
+      files.push(path.join(dir, entry.name));
+    } else if (depth > 0 && entry.isDirectory() && entry.name !== 'node_modules' && !entry.name.startsWith('.')) {
+      files.push(...listToolScripts(path.join(dir, entry.name), depth - 1));
+    }
+  }
+  return files;
+}
+
 /**
- * 扫描项目里已经生成的站点脚本（.tools/*.mjs、.aio/*.mjs）。
+ * 扫描项目里已经生成的站点脚本。默认位置是 `.env-prep/tools/<站点>/<站点>.mjs`；
+ * 同时兼容旧布局 `.tools/<站点>.mjs`、`.aio/<站点>.mjs`。
  * 只读文件、静态取 `BASE = 'https://…'`，**不执行脚本**，避免探测阶段触发登录。
  */
 export function discoverScriptSites(projectDir) {
   const results = [];
-  for (const folder of ['.tools', '.aio']) {
-    const dir = path.join(projectDir, folder);
-    if (!fs.existsSync(dir)) continue;
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (!entry.isFile() || !entry.name.endsWith('.mjs')) continue;
-      const file = path.join(dir, entry.name);
+  const roots = [
+    { dir: path.join(projectDir, '.env-prep', 'tools'), depth: 2 },
+    { dir: path.join(projectDir, '.tools'), depth: 1 },
+    { dir: path.join(projectDir, '.aio'), depth: 1 },
+  ];
+  const seen = new Set();
+  for (const root of roots) {
+    for (const file of listToolScripts(root.dir, root.depth)) {
+      if (seen.has(file)) continue;
+      seen.add(file);
       let text = '';
       try {
         text = fs.readFileSync(file, 'utf8');
@@ -1610,7 +1634,7 @@ export function discoverScriptSites(projectDir) {
       }
       const base = extractScriptBase(text);
       if (base === null) continue;
-      const stem = path.basename(entry.name, '.mjs');
+      const stem = path.basename(file, '.mjs');
       const rule = matchKnownSite(siteInfo(base, stem));
       const kinds = new Set([
         ...(rule?.kinds ?? []),
@@ -1927,8 +1951,22 @@ function buildPlatformPayload(profile, sites, attempts, domains, registryPath) {
 }
 
 /** 把主入口合并回 profile：platforms 存主入口，logs/release/bug 供书签与动作直接消费。 */
-export function mergePlatformsIntoProfile(profile, platforms) {
+export function mergePlatformsIntoProfile(profile, platforms, projectDir = null) {
   const changes = [];
+  // 站点脚本搬家后（如 .tools/ → .env-prep/tools/），把指向旧位置的 fields 修好。
+  const stalePath = (oldValue, newValue) =>
+    projectDir !== null &&
+    typeof oldValue === 'string' &&
+    typeof newValue === 'string' &&
+    oldValue !== newValue &&
+    !fs.existsSync(path.resolve(projectDir, oldValue)) &&
+    fs.existsSync(path.resolve(projectDir, newValue));
+  // `node <脚本> ...` 里的脚本已经不存在（脚本搬家后的旧命令）。
+  const staleCommand = (value) => {
+    if (projectDir === null || typeof value !== 'string') return false;
+    const match = value.match(/^node\s+(\S+)/);
+    return match ? !fs.existsSync(path.resolve(projectDir, match[1])) : false;
+  };
   profile.platforms = profile.platforms && typeof profile.platforms === 'object' ? profile.platforms : {};
   for (const kind of PLATFORM_ORDER) {
     const entry = platforms?.[kind];
@@ -1956,8 +1994,10 @@ export function mergePlatformsIntoProfile(profile, platforms) {
         changes.push(`platforms.${kind}+`);
       }
     } else if (same) {
+      const toolsStale = stalePath(existing.tools, slim.tools);
       for (const field of ['name', 'api', 'tools', 'command', 'auth']) {
-        if (existing[field] === undefined && slim[field] !== undefined) {
+        const stale = (toolsStale && (field === 'tools' || field === 'command')) || (field === 'command' && staleCommand(existing.command));
+        if ((existing[field] === undefined || stale) && slim[field] !== undefined) {
           existing[field] = slim[field];
           changes.push(`platforms.${kind}.${field}`);
         }
@@ -1983,8 +2023,10 @@ export function mergePlatformsIntoProfile(profile, platforms) {
       array.push(item);
       changes.push(`${arrayName}+${entry.site}`);
     } else {
+      const toolsStale = stalePath(found.tools, item.tools);
       for (const field of ['site', 'name', 'api', 'tools', 'command', 'detected']) {
-        if (found[field] === undefined && item[field] !== undefined) found[field] = item[field];
+        const stale = (toolsStale && (field === 'tools' || field === 'command')) || (field === 'command' && staleCommand(found.command));
+        if ((found[field] === undefined || stale) && item[field] !== undefined) found[field] = item[field];
         if (field === 'detected' && found.detected === undefined) found.detected = true;
       }
     }
@@ -2090,7 +2132,7 @@ export async function discoverPlatforms(profile, outDir, options = {}) {
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'platforms.json'), `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
 
-  const changes = options.writeProfile === false ? [] : mergePlatformsIntoProfile(profile, payload.platforms);
+  const changes = options.writeProfile === false ? [] : mergePlatformsIntoProfile(profile, payload.platforms, projectDir);
   if (options.writeProfile !== false && changes.length > 0 && typeof options.profilePath === 'string' && options.profilePath !== '') {
     try {
       fs.copyFileSync(options.profilePath, `${options.profilePath}.bak`);

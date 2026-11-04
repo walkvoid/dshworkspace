@@ -23,7 +23,7 @@
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
 | `project` | ✅ | 项目名，用于书签文件夹与输出目录。缺失时自动推断：**仓库名公共前缀**（按 `-` 取首段，覆盖 ≥60% 才采用）优先，其次是 **git 组名**（URL 最后一段）。可用 `--project` 覆盖 |
-| `outDir` | — | 输出目录（nacos 配置、MCP 片段、书签备份、`platforms.json`）。缺省为 `./.env-prep`；建议设成 `<git.dir>/.env-prep`，让代码与资料放在一起（<br>`<工作目录>/project/<项目名>/.env-prep`） |
+| `outDir` | — | 输出目录（nacos 配置、MCP 片段、书签备份、`platforms.json`、`tools/<站点>/`、凭据）。缺省为 `./.env-prep`；建议设成 `<git.dir>/.env-prep`，让代码与资料放在一起（<br>`<工作目录>/project/<项目名>/.env-prep`） |
 | `platforms` | — | 日志/发布/缺陷平台主入口，自动探测写入，也可以手写；详见下文 |
 | `release` / `bug` | — | 发布、缺陷平台条目，供书签与后续技能直接消费；通常由 `platforms` 合并而来 |
 | 其余 | — | 都是数组，没有就留空数组 |
@@ -118,17 +118,17 @@
     "confidence": "script",
     "detected": true,
     "api": "/u5/api/v1/auth/me",
-    "tools": ".tools/beecloud.mjs",
-    "command": "node .tools/beecloud.mjs search --query '<关键字>' --hours 1",
+    "tools": ".env-prep/tools/beecloud/beecloud.mjs",
+    "command": "node .env-prep/tools/beecloud/beecloud.mjs search --query '<关键字>' --hours 1",
     "auth": "script-managed"
   },
-  "release": { "site": "beecloud", "url": "http://beecloud.example.com:1040", "tools": ".tools/beecloud.mjs" },
-  "bug": { "site": "aio", "url": "https://aio.example.com", "tools": ".aio/aio.mjs", "command": "node .aio/aio.mjs bugs" }
+  "release": { "site": "beecloud", "url": "http://beecloud.example.com:1040", "tools": ".env-prep/tools/beecloud/beecloud.mjs" },
+  "bug": { "site": "aio", "url": "https://aio.example.com", "tools": ".env-prep/tools/aio/aio.mjs", "command": "node .env-prep/tools/aio/aio.mjs bugs" }
 }
 ```
 
 - `url` 是站点入口（origin）；`api` 只写**真正探到**的接口（401/403/405 也算存在），不猜 UI 子路径；
-- `tools` / `command` 指向已生成的站点脚本，后续直接跑，不再重新找接口；
+- `tools` / `command` 指向已生成的站点脚本，统一放 `.env-prep/tools/<站点>/`，后续直接跑，不再重新找接口；
 - `confidence`：`script` > `saved` > `provided` > `suite` > `signature` > `registry` > `bookmark` > `hostname`；
 - `detected: true` 表示自动探测写入；**用户手写的条目不会被自动结果覆盖**；
 - profile 只存主入口；完整结果（`alternates`、`sites`、`attempts`、`missing`、`registry`）在
@@ -137,7 +137,7 @@
 ## release / bug
 
 ```json
-{ "id": "beecloud", "site": "beecloud", "name": "BeeCloud", "url": "http://beecloud.example.com:1040", "tools": ".tools/beecloud.mjs", "detected": true }
+{ "id": "beecloud", "site": "beecloud", "name": "BeeCloud", "url": "http://beecloud.example.com:1040", "tools": ".env-prep/tools/beecloud/beecloud.mjs", "detected": true }
 ```
 
 与 `logs` 同构：`id`/`site` 一致，`name` 用于书签，`tools`/`command` 指向取数脚本。

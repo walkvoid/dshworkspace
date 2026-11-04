@@ -80,26 +80,47 @@ test('resolveRegistryPath 指向 project/.platforms.json', () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('discoverScriptSites 只静态读 BASE，不执行脚本', () => {
+test('discoverScriptSites 扫描 .env-prep/tools/<站点>/ 且不执行脚本', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'env-prep-scripts-'));
   try {
-    fs.mkdirSync(path.join(root, '.tools'), { recursive: true });
-    fs.mkdirSync(path.join(root, '.aio'), { recursive: true });
+    fs.mkdirSync(path.join(root, '.env-prep', 'tools', 'beecloud'), { recursive: true });
+    fs.mkdirSync(path.join(root, '.env-prep', 'tools', 'aio'), { recursive: true });
     fs.writeFileSync(
-      path.join(root, '.tools', 'beecloud.mjs'),
+      path.join(root, '.env-prep', 'tools', 'beecloud', 'beecloud.mjs'),
       "const BASE = 'http://beecloud.demo.com:1040';\nprocess.exit(99);\n",
       'utf8',
     );
-    fs.writeFileSync(path.join(root, '.aio', 'aio.mjs'), "const BASE = 'https://aio.demo.com';\nprocess.exit(99);\n", 'utf8');
+    fs.writeFileSync(
+      path.join(root, '.env-prep', 'tools', 'aio', 'aio.mjs'),
+      "const BASE = 'https://aio.demo.com';\nprocess.exit(99);\n",
+      'utf8',
+    );
     const sites = discoverScriptSites(root);
-    const beecloud = sites.find((item) => item.tools === '.tools/beecloud.mjs');
-    const aio = sites.find((item) => item.tools === '.aio/aio.mjs');
+    const beecloud = sites.find((item) => item.tools === '.env-prep/tools/beecloud/beecloud.mjs');
+    const aio = sites.find((item) => item.tools === '.env-prep/tools/aio/aio.mjs');
     assert.ok(beecloud);
     assert.deepEqual([...beecloud.kinds].sort(), ['log', 'release']);
     assert.equal(beecloud.commands.log.includes('search'), true);
     assert.ok(aio);
     assert.deepEqual(aio.kinds, ['bug']);
-    assert.equal(aio.commands.bug, 'node .aio/aio.mjs bugs');
+    assert.equal(aio.commands.bug, 'node .env-prep/tools/aio/aio.mjs bugs');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('discoverScriptSites 兼容旧布局 .tools / .aio', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'env-prep-scripts-legacy-'));
+  try {
+    fs.mkdirSync(path.join(root, '.tools'), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, '.tools', 'beecloud.mjs'),
+      "const BASE = 'http://beecloud.demo.com:1040';\n",
+      'utf8',
+    );
+    const sites = discoverScriptSites(root);
+    assert.equal(sites.length, 1);
+    assert.equal(sites[0].tools, '.tools/beecloud.mjs');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -138,8 +159,8 @@ test('mergePlatformsIntoProfile 写入且幂等', () => {
     name: 'BeeCloud',
     url: 'http://beecloud.demo.com',
     confidence: 'script',
-    tools: '.tools/beecloud.mjs',
-    command: 'node .tools/beecloud.mjs search',
+    tools: '.env-prep/tools/beecloud/beecloud.mjs',
+    command: 'node .env-prep/tools/beecloud/beecloud.mjs search',
     api: '/u5/api/v1/auth/me',
     auth: 'script-managed',
   };
@@ -152,8 +173,8 @@ test('mergePlatformsIntoProfile 写入且幂等', () => {
       name: 'AIO',
       url: 'https://aio.demo.com',
       confidence: 'script',
-      tools: '.aio/aio.mjs',
-      command: 'node .aio/aio.mjs bugs',
+      tools: '.env-prep/tools/aio/aio.mjs',
+      command: 'node .env-prep/tools/aio/aio.mjs bugs',
       auth: 'script-managed',
     },
   };
@@ -161,13 +182,66 @@ test('mergePlatformsIntoProfile 写入且幂等', () => {
   const changes = mergePlatformsIntoProfile(profile, platforms);
   assert.ok(changes.includes('platforms.log'));
   assert.equal(profile.logs.length, 2);
-  assert.equal(profile.logs.find((item) => item.site === 'beecloud').tools, '.tools/beecloud.mjs');
+  assert.equal(
+    profile.logs.find((item) => item.site === 'beecloud').tools,
+    '.env-prep/tools/beecloud/beecloud.mjs',
+  );
   assert.equal(profile.release[0].site, 'beecloud');
   assert.equal(profile.bug[0].site, 'aio');
   assert.equal(profile.platforms.log.api, '/u5/api/v1/auth/me');
 
   const again = mergePlatformsIntoProfile(profile, platforms);
   assert.deepEqual(again, []);
+});
+
+test('mergePlatformsIntoProfile 修复搬家后的脚本路径', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'env-prep-migrate-'));
+  try {
+    const newTools = '.env-prep/tools/beecloud/beecloud.mjs';
+    fs.mkdirSync(path.join(root, '.env-prep', 'tools', 'beecloud'), { recursive: true });
+    fs.writeFileSync(path.join(root, newTools), "const BASE = 'http://beecloud.demo.com';\n", 'utf8');
+    const profile = {
+      project: 'demo',
+      platforms: {
+        log: {
+          site: 'beecloud',
+          url: 'http://beecloud.demo.com',
+          tools: '.tools/beecloud.mjs',
+          command: 'node .tools/beecloud.mjs search',
+        },
+      },
+      logs: [
+        {
+          id: 'beecloud',
+          site: 'beecloud',
+          url: 'http://beecloud.demo.com',
+          tools: '.tools/beecloud.mjs',
+          command: 'node .tools/beecloud.mjs search',
+        },
+      ],
+    };
+    mergePlatformsIntoProfile(
+      profile,
+      {
+        log: {
+          kind: 'log',
+          site: 'beecloud',
+          name: 'BeeCloud',
+          url: 'http://beecloud.demo.com',
+          tools: newTools,
+          command: `node ${newTools} search`,
+          confidence: 'script',
+        },
+      },
+      root,
+    );
+    assert.equal(profile.platforms.log.tools, newTools);
+    assert.equal(profile.platforms.log.command, `node ${newTools} search`);
+    assert.equal(profile.logs[0].tools, newTools);
+    assert.equal(profile.logs[0].command, `node ${newTools} search`);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('mergePlatformsIntoProfile 不覆盖用户手写的平台入口', () => {

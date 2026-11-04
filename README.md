@@ -128,7 +128,9 @@ node scripts/stock-data.mjs all hk:02318      # 港股：行情 + 派息公告�
 - **克隆后切到「默认分支之外、最新提交」的远端分支**（`active` 策略，按 committerdate；Git 不记录分支创建时间）；
   想取全部分支里最新的用 `--branch-strategy latest`，想固定在 profile 的 `branch` 用 `--keep-branch`；
 - **只克隆最近 30 天有提交的仓库**（`--max-age` 可调，`--max-age 0` 关闭），长期不动的仓库会被跳过并列出最后提交时间；
-- **没写日志/发布/缺陷平台时自动探测**：先读项目站点脚本（`.tools/*.mjs`、`.aio/*.mjs`）与跨项目登记表，
+- **环境准备的所有产物都收在 `<项目>/.env-prep/`**：profile、nacos、MCP 片段、书签备份、平台清单、
+  站点脚本（`tools/<站点>/`）与会话；代码仓库仍平铺在 `<项目>/` 下；
+- **没写日志/发布/缺陷平台时自动探测**：先读项目站点脚本（`.env-prep/tools/<站点>/`）与跨项目登记表，
   再看同域平台名（BeeCloud/Jenkins/Grafana/AIO…）并只读浏览器书签；结果写 `<out>/platforms.json` 并合并回
   profile 的 `platforms`/`release`/`bug`。实测 jasolar：BeeCloud 同时是日志与发布，AIO 是缺陷；
   探测有上限（默认 24 次请求），`--no-probe` / `--no-scan` / `--no-bookmarks` 可逐项关闭；

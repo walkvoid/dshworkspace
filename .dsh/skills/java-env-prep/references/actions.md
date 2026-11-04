@@ -256,7 +256,7 @@ node scripts/env-prep.mjs platforms env-profile.json       # 只读已保存结�
 
 | 顺序 | 来源 | `confidence` | 说明 |
 | --- | --- | --- | --- |
-| 1 | 项目站点脚本 `.tools/*.mjs` / `.aio/*.mjs` | `script` | 静态读 `const BASE = 'https://…'`，**不执行脚本**；命中已知套件或正文关键词就归类 |
+| 1 | 项目站点脚本 `.env-prep/tools/<站点>/<站点>.mjs`（兼容旧 `.tools/`、`.aio/`） | `script` | 静态读 `const BASE = 'https://…'`，**不执行脚本**；命中已知套件或正文关键词就归类 |
 | 2 | `profile.platforms` / `logs` / `release` / `bug` 里 `detected: true` | `saved` | 上一次探测的结果，直接复用 |
 | 3 | 用户显式写的 URL + 名字/备注 | `provided` | 关键词按词边界匹配，`login`/`lowcode` 不会命中 `log` |
 | 4 | 已知套件（`KNOWN_SITES`） | `suite` | BeeCloud=日志+发布、AIO=缺陷、Jenkins=发布、Grafana/Kibana=日志、Jira/禅道/TAPD/Redmine=缺陷、Argo CD=发布 |
@@ -284,14 +284,14 @@ node scripts/env-prep.mjs platforms env-profile.json       # 只读已保存结�
     "log": {
       "kind": "log", "site": "beecloud", "name": "BeeCloud",
       "url": "http://beecloud.jasolar.com:1040",
-      "tools": ".tools/beecloud.mjs",
-      "command": "node .tools/beecloud.mjs search --query '<关键字>' --hours 1",
+      "tools": ".env-prep/tools/beecloud/beecloud.mjs",
+      "command": "node .env-prep/tools/beecloud/beecloud.mjs search --query '<关键字>' --hours 1",
       "api": "/u5/api/v1/auth/me",
       "confidence": "script", "auth": "script-managed",
       "alternates": [{ "site": "grafana", "url": "http://grafana.jasolar.com:1040" }]
     },
     "release": { "kind": "release", "site": "beecloud", "url": "http://beecloud.jasolar.com:1040" },
-    "bug": { "kind": "bug", "site": "aio", "url": "https://aio.llschain.com", "tools": ".aio/aio.mjs" }
+    "bug": { "kind": "bug", "site": "aio", "url": "https://aio.llschain.com", "tools": ".env-prep/tools/aio/aio.mjs" }
   },
   "missing": [],
   "sites": [],
@@ -302,8 +302,10 @@ node scripts/env-prep.mjs platforms env-profile.json       # 只读已保存结�
 
 - `api` 只写**真正探到**的接口：401/403/405/3xx 都算“模块在”，404 不算；**不猜 UI 子路径**；
 - `tools` / `command` 指向已生成的站点脚本，`apply --only logs` 会为它生成转发脚本，不再造空骨架；
+- 站点脚本统一放 `.env-prep/tools/<站点>/<站点>.mjs`，会话与查询条件也放在同一站点目录；
+  旧项目的 `.tools/`、`.aio/` 仍会被扫描，但新脚本不再写那里；
 - 主入口同时合并回 profile 的 `platforms` / `logs` / `release` / `bug`（写前备份 `env-profile.json.bak`），
-  用户手写的条目不会被覆盖；
+  用户手写的条目不会被覆盖；脚本搬家后旧路径会被自动修正；
 - 探测结果与站点脚本名一起进跨项目登记表，下一个项目可直接复用。
 
 ### 安全边界
