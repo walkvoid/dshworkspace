@@ -12,6 +12,11 @@ Thumbs.db
 .env-prep/
 *.env-profile.json
 
+# 9c video transcripts/prompts are local research material; only distilled claims belong in the repo.
+.dsh/skills/9c/knowledge/transcripts/*.md
+!.dsh/skills/9c/knowledge/transcripts/README.md
+.dsh/skills/9c/knowledge/prompts/*.md
+
 # Cloned project workspaces (repos + their .env-prep) never belong to this repo.
 /project/
 /.idea/

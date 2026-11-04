@@ -101,6 +101,10 @@ node --test "$repo\data\test\contract.test.mjs"   # 24 项离线契约测试
 A/H 分开算。人格资产（`persona.md` / `framework.md` / `style.md` / `eval.md`）与 `SKILL.md` 同级，
 都在 [`.dsh/skills/9c/`](./.dsh/skills/9c/SKILL.md)。
 
+判例库在 `knowledge/`：视频转写先抽成原子 claim（带 bvid + 秒级时间戳），人工审核后编译成
+`knowledge/compiled/active-claims.md`，runtime 只读这一份；原始转写与 prompt 不提交。流程见
+[`knowledge/README.md`](./.dsh/skills/9c/knowledge/README.md)。
+
 > 只维护一个技能名：`/9c` 是真正的斜杠命令，`/史诗级韭菜` 是触发词。拼音别名 `/shichijijiucai` 已取消——
 > DSH 的 `/name` 调用按技能名精确匹配，一个技能只能有一个名字，与其维护转发层，不如让正文只有一处。
 

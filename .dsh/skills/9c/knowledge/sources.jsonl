@@ -1,0 +1,3 @@
+# 视频清单：bvid / title / publishedAt / durationSec / type / url / status / note
+# 逐行 JSON；只做索引，不存字幕。示例：
+# {"bvid":"BV1xxxxxxxxx","title":"三大选股因子","publishedAt":"2025-04-12","durationSec":1421,"type":"method","url":"https://www.bilibili.com/video/BV1xxxxxxxxx","status":"transcribed","note":""}

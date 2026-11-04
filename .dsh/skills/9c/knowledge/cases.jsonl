@@ -1,0 +1,2 @@
+# 他公开视频中的股票判断，逐行 JSON（schema 见 case.schema.json）。有 outcome 后再进入结果评测。
+# 示例字段：id / stock / as_of / stance / thesis / horizon / source / outcome / status

@@ -21,6 +21,7 @@ description: 以 B 站财经 UP 主「史诗级韭菜」的龟龟投资法评估
 | `framework.md` | 三因子评分细则、阈值、仓位映射、数据字段对照 | 填表前必读 |
 | `style.md` | 语气样例、句式、忌语 | 生成表达前必读 |
 | `eval.md` | 评测集与评分表 | 改完人格或框架后回归用 |
+| `knowledge/compiled/active-claims.md` | 已审核的判例/边界规则（由 `knowledge/claims.jsonl` 生成） | 三因子落在阈值附近、行业特例、或需要历史判断时按需读 |
 
 数据脚本在仓库根目录 `scripts/stock-data.mjs`。**仓库根按下列顺序解析**（装到用户级技能目录后相对路径会断，靠这个兜底）：
 
@@ -60,6 +61,12 @@ node <仓库根>/scripts/stock-data.mjs all "中国平安"
   引用时把算式和两个乘数一起写出来，别只丢一个百分数。
 - 因子三：脚本的 `derived.freeCashFlowProxyYi` 只是代理值，必须说明它是"经营现金流净额 + 投资现金流净额"，
   并按他的"极端保守主义"再打一次折：资本开支、并购一律视为流出。
+
+### 第 3.5 步：边界案例查判例（可选）
+
+三因子落在阈值附近（如穿透回报率 3%/6%/10% 附近）、或行业特例（银行/地产/REITs/港股）时，
+读 `knowledge/compiled/active-claims.md` 里对应 `dimension` 的判例。判例只用于**补充证据和校准**，
+不能推翻 `framework.md` 的硬规则；没有判例就按框架外推，并注明"无判例"。
 
 ### 第 4 步：跑硬规则与一票否决
 
@@ -125,3 +132,25 @@ node scripts/stock-data.mjs all hk:02318         # 港股：仅行情，财务�
      否则"最低派息率"会被截断的年份压低）。
 - 输出字段含义见 `framework.md` 的"数据字段对照"。
 - `meta.stale: true` 表示上游失败后返回的是过期缓存，必须在回答里标注数据时点。
+
+## 五、知识库维护（改框架/加判例时用）
+
+原始视频转写、抽取 prompt、候选 claim 都不进 runtime；runtime 只读 `knowledge/compiled/active-claims.md`。
+
+```bash
+cd .dsh/skills/9c
+
+node scripts/knowledge.mjs validate          # 校验 id/日期/证据/枚举
+node scripts/knowledge.mjs compile           # 只编译 active + reviewed 的 claim
+node scripts/knowledge.mjs stats
+
+# 从本地转写生成抽取 prompt（不联网）
+node scripts/knowledge.mjs prompt \
+  --transcript knowledge/transcripts/BV1xxxxxxxxx.md \
+  --bvid BV1xxxxxxxxx --title "三大选股因子"
+```
+
+- 新增 claim 先标 `candidate` + `reviewed:false`，人工核对原话与时间戳后才改 `active`；
+- **不要把整篇转写/字幕提交到仓库**，只提交结构化 claim 与短引用；
+- 改完 `framework.md` 或 `claims.jsonl` 后跑 `eval.md` 第一层；有历史案例再跑第二层；
+- 详细流程见 [`knowledge/README.md`](./knowledge/README.md)，评测口径见 [`eval/README.md`](./eval/README.md)。

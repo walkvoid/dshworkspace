@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "9c claim",
+  "description": "从公开视频或现有 framework 抽取的一条原子判断。candidate 只进知识库，active 才会编译进 runtime。",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "type", "statement", "as_of", "status", "confidence", "reviewed", "evidence"],
+  "properties": {
+    "id": { "type": "string", "description": "唯一 id，建议 <来源>-<序号>，如 fw-001 / BV1xx-003" },
+    "type": { "enum": ["rule", "case", "prediction", "caveat", "definition"] },
+    "dimension": { "enum": ["business", "cashflow", "valuation", "portfolio", "risk", "edge", "other"] },
+    "statement": { "type": "string", "description": "一句可执行、可证伪的判断；不要写成大段总结" },
+    "conditions": { "type": "array", "items": { "type": "string" }, "description": "适用条件，如 A股 / 港股 / 非REITs / 股息率<3%" },
+    "as_of": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "他说这句话的日期（视频发布日期）；不知道就留空并标待补" },
+    "effective_from": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "status": { "enum": ["candidate", "active", "deprecated"] },
+    "confidence": { "enum": ["high", "medium", "low"] },
+    "reviewed": { "type": "boolean", "description": "active 必须为 true；candidate 为 false" },
+    "reviewed_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "reviewed_by": { "type": "string" },
+    "supersedes": { "type": ["string", "null"], "description": "被本条取代的旧 claim id" },
+    "superseded_by": { "type": ["string", "null"], "description": "取代本条的 claim id；deprecated 时建议填写" },
+    "stock": {
+      "type": "object",
+      "properties": { "name": { "type": "string" }, "code": { "type": "string" } },
+      "additionalProperties": true
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["video", "framework", "note"] },
+        "bvid": { "type": "string", "pattern": "^BV[0-9A-Za-z]{10}$" },
+        "t": { "type": "integer", "minimum": 0, "description": "视频内秒数" },
+        "quote": { "type": "string", "description": "原话；不能是转述" },
+        "path": { "type": "string", "description": "framework 证据的相对路径，如 framework.md" },
+        "section": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "notes": { "type": "string" }
+  }
+}

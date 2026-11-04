@@ -1,0 +1,2 @@
+{"id":"eval-example-001","input":"/史诗级韭菜 中国平安","as_of":"2025-01-02","expected":{"stance":"avoid","must_include":["高杠杆","≤5%"],"must_not":["目标价","抄底"]},"outcome":null,"notes":"模板示例，不是真实评测结果；请替换成自己的题。"}
+{"id":"eval-example-002","input":"/史诗级韭菜 长江电力","as_of":"2025-01-02","expected":{"stance":"watch","must_include":["股息率","穿透回报率"],"must_not":["目标价"]},"outcome":null,"notes":"模板示例，不是真实评测结果；请替换成自己的题。"}

@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-11-04T03:35:22.279Z",
+  "claims": 7,
+  "active": 7,
+  "byStatus": {
+    "active": 7
+  },
+  "byType": {
+    "rule": 7
+  },
+  "byDimension": {
+    "risk": 1,
+    "valuation": 2,
+    "portfolio": 3,
+    "business": 1
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "9c stock call case",
+  "description": "他公开视频里对某只股票/行业的明确判断，用于结果评测；不要收录事后归因的泛泛评论。",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "stock", "as_of", "stance", "thesis", "source"],
+  "properties": {
+    "id": { "type": "string" },
+    "stock": {
+      "type": "object",
+      "properties": { "name": { "type": "string" }, "code": { "type": "string" }, "market": { "enum": ["A", "HK", "US"] } },
+      "additionalProperties": true
+    },
+    "as_of": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "stance": { "enum": ["bull", "bear", "avoid", "watch", "neutral"] },
+    "thesis": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "horizon": { "type": "string", "description": "如 12m / 3y / open-ended" },
+    "source": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["video", "note"] },
+        "bvid": { "type": "string", "pattern": "^BV[0-9A-Za-z]{10}$" },
+        "t": { "type": "integer", "minimum": 0 },
+        "quote": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "outcome": {
+      "type": ["object", "null"],
+      "properties": {
+        "returnPct": { "type": "number", "description": "区间总回报，含分红再投入，百分比" },
+        "benchmark": { "type": "string", "description": "如 csi300 / 行业指数 / 恒生指数" },
+        "excessPct": { "type": "number" },
+        "maxDrawdownPct": { "type": "number" },
+        "labeledAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+      },
+      "additionalProperties": true
+    },
+    "status": { "enum": ["open", "closed"] },
+    "notes": { "type": "string" }
+  }
+}
