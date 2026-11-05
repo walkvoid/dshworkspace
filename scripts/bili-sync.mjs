@@ -197,13 +197,16 @@ async function listVideos(options = {}) {
       if (vlist.length === 0) break;
       let older = 0;
       for (const item of vlist) {
-        const pubdate = Number(item.pubdate ?? 0);
+        // The modern arc/search response spells the publish time `created`;
+        // older payloads used `pubdate`. Reading only one of them made every
+        // item look undated and dropped the whole listing.
+        const pubdate = Number(item.pubdate ?? item.created ?? 0);
         if (pubdate >= cutoff) {
           items.push({
             bvid: item.bvid,
             title: item.title,
             pubdate,
-            durationSec: parseDuration(item.duration),
+            durationSec: parseDuration(item.duration ?? item.length),
             author: item.author,
             play: item.play,
             url: `https://www.bilibili.com/video/${item.bvid}`,
