@@ -1,6 +1,15 @@
 {
-  "lastSyncedAt": null,
-  "lastVideoPublishedAt": null,
-  "lastVideoBvid": null,
-  "note": "第一次 /9c update 没有历史时间时从近 365 天开始；成功后写回本次最新视频日期，下次从这里继续（默认重叠 2 天）。"
+  "lastSyncedAt": "2026-11-05T13:48:16.318Z",
+  "lastVideoPublishedAt": "2026-11-05",
+  "lastVideoBvid": "BV1Sp4b6PEFA",
+  "lastRun": {
+    "since": null,
+    "listed": 27,
+    "transcriptsOk": 6,
+    "transcriptsSkipped": 0,
+    "transcriptsFailed": 4,
+    "docPrompts": 6,
+    "docGenerated": 0,
+    "cos": "skipped"
+  }
 }

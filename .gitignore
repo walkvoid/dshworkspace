@@ -19,8 +19,10 @@ Thumbs.db
 .dsh/skills/9c/knowledge/transcripts/*.md
 !.dsh/skills/9c/knowledge/transcripts/README.md
 .dsh/skills/9c/knowledge/prompts/*.md
+.dsh/skills/9c/knowledge/prompts/*.jsonl
 .dsh/skills/9c/knowledge/docs/*.md
 !.dsh/skills/9c/knowledge/docs/README.md
+.dsh/skills/9c/knowledge/*.bak
 
 # Cloned project workspaces (repos + their .env-prep) never belong to this repo.
 /project/
