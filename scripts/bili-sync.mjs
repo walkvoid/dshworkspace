@@ -256,7 +256,26 @@ async function fetchSubtitle(source) {
   const url = picked.subtitle_url?.startsWith('//') ? `https:${picked.subtitle_url}` : picked.subtitle_url;
   if (!url) return { ok: false, reason: '字幕没有 subtitle_url' };
   const body = await fetchJson(url);
-  const lines = (body.body ?? [])
+  const cues = Array.isArray(body.body) ? body.body : [];
+  // B 站偶尔把别的视频的 AI 字幕挂到本视频上（实测同一个 cid 连取三次能拿到
+  // 旅行 vlog / 歌词 / 科普三种内容）。字幕覆盖不到视频六成、或比视频还长，
+  // 都说明它不是这条视频的：宁可标 no-subtitle，也不把垃圾写进知识库。
+  const duration = Number(data.duration ?? 0);
+  const lastCue = cues.reduce((max, cue) => Math.max(max, Number(cue.from) || 0), 0);
+  const coverage = duration > 0 ? lastCue / duration : 1;
+  if (lastCue > duration + 60) {
+    return {
+      ok: false,
+      reason: `字幕末条 ${formatTime(lastCue)} 超过视频时长 ${formatTime(duration)}，疑似上游串条，已丢弃`,
+    };
+  }
+  if (coverage < 0.6) {
+    return {
+      ok: false,
+      reason: `字幕只覆盖视频 ${Math.round(coverage * 100)}%（末条 ${formatTime(lastCue)} / 时长 ${formatTime(duration)}），疑似上游串条或字幕残缺，已丢弃`,
+    };
+  }
+  const lines = cues
     .map((item) => `[${formatTime(item.from)}] ${String(item.content ?? '').trim()}`)
     .filter((line) => line.length > 12)
     .join('\n');
@@ -296,7 +315,12 @@ async function subtitles(options = {}) {
       continue;
     }
     try {
-      const result = await fetchSubtitle(source);
+      let result = await fetchSubtitle(source);
+      // 上游串条是随机的：同一条视频重取往往就能拿到正确字幕，所以对
+      // 「疑似串条 / 字幕残缺」这类可重试的拒绝再取两次，其余失败不重试。
+      for (let attempt = 0; attempt < 2 && !result.ok && /疑似上游串条|字幕残缺/.test(result.reason ?? ''); attempt += 1) {
+        result = await fetchSubtitle(source);
+      }
       results.push({ bvid: source.bvid, ...result });
       if (result.ok) source.status = 'transcribed';
       else source.status = 'no-subtitle';
