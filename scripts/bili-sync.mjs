@@ -29,6 +29,12 @@ const DOCS_DIR = path.join(KNOWLEDGE, 'docs');
 const MID = '322005137';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 
+/**
+ * 财经词表，用于判断一条字幕到底是不是这个频道的视频。
+ * 频道里每支视频都在谈股票/估值/股息，实测正常转写每万字符命中 20~85 次。
+ */
+const FINANCE_TERMS = /股票|估值|股息|仓位|持仓|市值|市盈|现金流|财报|指数|基金|债券|利率|美元|利润|营收|分红|港股|A股|涨|跌/g;
+
 const args = process.argv.slice(2);
 const command = args[0] ?? 'help';
 const has = (name) => args.includes(`--${name}`);
@@ -230,7 +236,7 @@ async function listVideos(options = {}) {
         publishedAt: new Date(Number(item.pubdate) * 1000).toISOString().slice(0, 10),
         pubdate: Number(item.pubdate),
         durationSec: Number(item.durationSec ?? old.durationSec ?? 0),
-        type: old.type ?? (/复盘|结算|直播|周记/.test(item.title ?? '') ? 'case' : 'method'),
+        type: old.type ?? (/复盘|结算|直播|周记|投资记录/.test(item.title ?? '') ? 'case' : 'method'),
         url: item.url ?? `https://www.bilibili.com/video/${item.bvid}`,
         status: old.status ?? 'listed',
         note: old.note ?? '',
@@ -279,6 +285,17 @@ async function fetchSubtitle(source) {
     .map((item) => `[${formatTime(item.from)}] ${String(item.content ?? '').trim()}`)
     .filter((line) => line.length > 12)
     .join('\n');
+  // 时长对得上不代表字幕是这条视频的：串过来的可能是同长度的别家内容。这个频道
+  // 每条视频都在讲股票，所以「财经词密度」是一道便宜的语义闸门——实测正常转写
+  // 每万字符 20~85 次，串条内容都在 15 以下，中间有明显断层。
+  const financeHits = (lines.match(FINANCE_TERMS) || []).length;
+  const density = lines.length > 0 ? financeHits / (lines.length / 10000) : 0;
+  if (density < 15) {
+    return {
+      ok: false,
+      reason: `字幕与财经主题不符（财经词密度 ${density.toFixed(1)}/万字符，正常值 20+），疑似串条，已丢弃`,
+    };
+  }
   const markdown = [
     `# ${data.title}`,
     '',
