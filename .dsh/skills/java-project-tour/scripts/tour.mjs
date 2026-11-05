@@ -1546,7 +1546,7 @@ function usage() {
     '  context <path>           某个类的上下游',
     '  core mark|unmark|list|brief   核心标记',
     '  features                 按入口 / 流程推断功能点候选',
-    '  db queries               打印查数据量用的只读 SQL（优先 dev 库）',
+    '  db queries               打印查数据量用的只读 SQL（优先 qa/test 库）',
     '  db ingest <rows.json>    把表行数汇入 db.json，并推断 5-10 个核心功能',
     '  status                   过期检测',
     '',
