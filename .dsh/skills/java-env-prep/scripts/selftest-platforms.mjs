@@ -72,10 +72,10 @@ test('collectDomains 从各环境地址归并出公司域名', () => {
   assert.deepEqual([...domains], ['jasolar.com']);
 });
 
-test('resolveRegistryPath 指向 project/.platforms.json', () => {
+test('resolveRegistryPath 指向 outDir/.platforms.json', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'env-prep-selftest-'));
   const outDir = path.join(root, 'project', 'demo', '.env-prep');
-  assert.equal(resolveRegistryPath(outDir), path.join(root, 'project', '.platforms.json'));
+  assert.equal(resolveRegistryPath(outDir), path.join(outDir, '.platforms.json'));
   assert.equal(resolveRegistryPath(outDir, path.join(root, 'custom.json')), path.join(root, 'custom.json'));
   fs.rmSync(root, { recursive: true, force: true });
 });

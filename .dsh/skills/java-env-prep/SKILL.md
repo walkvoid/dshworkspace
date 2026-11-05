@@ -1,6 +1,6 @@
 ---
 name: java-env-prep
-description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep、/环境准备，或直接给出一份包含数据库连接、各环境 URL、nacos/nexus 地址、git 仓库地址的文档/表格/图片/聊天记录时使用。把资料抽取成 env-profile.json，再配置数据库 MCP、拉取 nacos 配置、在浏览器打开各环境、克隆仓库、并探测内部日志平台生成取日志脚本。用户没写日志/发布/缺陷平台时，会自动探测入口（已知套件、项目站点脚本、跨项目登记表、浏览器书签、同域候选）并保存到 platforms.json。也用于给需要登录的内部平台（缺陷系统、发布平台、日志平台等）写自动登录脚本：用户给一个网址 + 账号密码，或说“写个自动登录/拉一下我的缺陷/bug 列表”时使用。
+description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep、/环境准备，或直接给出一份包含数据库连接、各环境 URL、nacos/nexus 地址、git 仓库地址的文档/表格/图片/聊天记录时使用。把资料抽取成 env-profile.json，再配置数据库 MCP、拉取 nacos 配置、在浏览器打开各环境、克隆仓库、并探测内部日志平台生成取日志脚本。用户没写日志/发布/缺陷平台时，会自动探测入口（已知套件、项目站点脚本、平台登记表、浏览器书签、同域候选）并保存到 platforms.json。也用于给需要登录的内部平台（缺陷系统、发布平台、日志平台等）写自动登录脚本：用户给一个网址 + 账号密码，或说“写个自动登录/拉一下我的缺陷/bug 列表”时使用。
 ---
 
 # Java 环境准备
@@ -20,6 +20,7 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 ├── env-profile.json                      # 唯一输入 + 探测结果
 ├── nacos/  mcp/  bookmarks/              # 配置、MCP 片段、书签备份
 ├── platforms.json                        # 日志/发布/缺陷平台入口
+├── .platforms.json                       # 平台登记表（跨次探测复用，不含凭据）
 ├── tools/<站点>/<站点>.mjs               # 登录 + 取数脚本、会话
 └── <站点>-credentials.json               # 凭据（git 忽略）
 ```
@@ -59,7 +60,7 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 | 各环境 URL、nexus | **写入浏览器书签**（项目名文件夹 + 分类） | Chromium 系直接改 `Bookmarks`；运行中退回可导入的 HTML |
 | git 仓库 | `git clone` 到指定目录（**只克隆最近 30 天有提交的仓库**），然后切到“正在开发”的分支 | 目标目录 |
 | 内部日志平台 | 探测接口 + 生成取日志脚本 | `<out>/logs/fetch-logs-<id>.mjs` |
-| **日志/发布/缺陷平台（用户没写入口）** | **自动探测入口并保存**（站点脚本 / 已知套件 / 跨项目登记表 / 书签 / 同域候选） | `<out>/platforms.json` + profile 的 `platforms`/`logs`/`release`/`bug`；跨项目登记表 `<工作目录>/project/.platforms.json` |
+| **日志/发布/缺陷平台（用户没写入口）** | **自动探测入口并保存**（站点脚本 / 已知套件 / 平台登记表 / 书签 / 同域候选） | `<out>/platforms.json` + profile 的 `platforms`/`logs`/`release`/`bug`；登记表 `<out>/.platforms.json` |
 | 需要登录的 Web 系统（缺陷/发布/日志平台…；**资料里任何「网址+账号密码」都算**） | 后台异步探明登录方式，生成**懒加载**自动登录脚本并缓存会话 | `<项目>/.env-prep/tools/<站点>/<站点>.mjs`，凭据放 `<项目>/.env-prep/` |
 
 **克隆完切分支（默认行为）**：`git clone` 之后执行一次
@@ -106,7 +107,7 @@ Git 不记录分支创建时间（`%(creatordate)` 对分支就是 tip 时间，
 | 用户提供 | 任何 URL + 名字/备注命中平台关键词（日志/发布/缺陷/构建/Jenkins/Jira…） |
 | 已知套件 | BeeCloud=日志+发布、AIO=缺陷、Jenkins=发布、Grafana=日志、Jira/禅道/TAPD=缺陷 |
 | 页面特征 | 抓标题/正文里的 `BeeCloud`/`应用观测`/`qaBug`/`DevOps` 等 |
-| 跨项目登记表 | `<工作目录>/project/.platforms.json`，同域或同项目复用（不含凭据） |
+| 平台登记表 | `<out>/.platforms.json`，同一 outDir 重复探测时复用（不含凭据） |
 | 浏览器书签 | 只读 Chrome/Edge/Brave 书签，按已知套件或同域筛选 |
 | 同域候选 | 固定平台名 + profile 出现过的协议/端口，默认上限 24 次请求 |
 
@@ -206,7 +207,7 @@ node scripts/env-prep.mjs platforms <env-profile.json>   # 只读已保存结果
 ```
 
 - `discover` 写 `<out>/platforms.json`，并把主入口合并回 `profile.platforms` / `logs` / `release` / `bug`
-  （改 profile 前备份为 `env-profile.json.bak`）；同时更新跨项目登记表 `<工作目录>/project/.platforms.json`；
+  （改 profile 前备份为 `env-profile.json.bak`）；同时更新登记表 `<out>/.platforms.json`；
 - **`apply` 全量执行时，缺平台会自动先跑一次探测**（`--no-discover` 关闭；`--no-probe` / `--no-scan` /
   `--no-bookmarks` 逐项收紧）；
 - 每个类型给一个主入口 + 至多 3 个 `alternates`，带 `confidence`：
@@ -307,7 +308,7 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
 4. **书签**：告诉用户是"已写入浏览器"还是"需要导入 HTML"，以及备份在哪；新增的 `发布/`、`缺陷/`
    分类也要一并说明；
 5. **平台入口**：`<out>/platforms.json` 是后续技能直接读的入口清单（`platforms.log/release/bug`），
-   `project/.platforms.json` 是跨项目登记表（只存 URL 与类型，不含凭据）；`missing` 里的类型要明确告诉用户；
+   `<out>/.platforms.json` 是平台登记表（只存 URL 与类型，不含凭据）；`missing` 里的类型要明确告诉用户；
 6. **告知用户**：哪些动作成功、哪些失败、哪些需要他补信息。
 
 ## 三、通用能力：给任意 Web 系统写自动登录脚本

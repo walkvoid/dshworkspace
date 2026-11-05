@@ -1157,11 +1157,11 @@ function maskProfile(profile) {
  *
  * 用户没写这三类平台的入口时，按证据链自动找，并把结果保存下来供后续直接使用：
  *   项目站点脚本 > profile 已保存 > 用户提供 > 已知平台套件 > 页面特征
- *   > 跨项目登记表 > 浏览器书签 > 同域候选探测
+ *   > 平台登记表 > 浏览器书签 > 同域候选探测
  *
  * 产物：
  *   <outDir>/platforms.json                 本次探测结果（kind → 主入口 + alternates）
- *   <project>/.platforms.json               跨项目登记表（只存 URL 与类型，不含凭据）
+ *   <outDir>/.platforms.json                平台登记表（只存 URL 与类型，不含凭据；跨次探测复用）
  *   profile.platforms / logs / release / bug 主入口合并回 env-profile.json
  *
  * 安全边界：同域候选探测只使用「已知平台名 + profile 里出现过的协议/端口」，预算上限默认 24 次；
@@ -1193,7 +1193,7 @@ const CONFIDENCE = {
   provided: { score: 80, label: '用户提供' },
   suite: { score: 70, label: '已知平台套件' },
   signature: { score: 60, label: '页面特征' },
-  registry: { score: 50, label: '跨项目登记表' },
+  registry: { score: 50, label: '平台登记表' },
   bookmark: { score: 40, label: '浏览器书签' },
   hostname: { score: 30, label: '域名推断' },
 };
@@ -1661,11 +1661,9 @@ function addScriptSites(projectDir, store) {
 
 export function resolveRegistryPath(outDir, explicit) {
   if (typeof explicit === 'string' && explicit !== '') return path.resolve(explicit);
-  const abs = path.resolve(outDir ?? '.env-prep');
-  if (path.basename(abs) === '.env-prep' && path.basename(path.dirname(path.dirname(abs))) === 'project') {
-    return path.join(path.dirname(path.dirname(abs)), '.platforms.json');
-  }
-  return path.resolve('project', '.platforms.json');
+  // 登记表跟产物放在一起，避免再往 <工作目录>/project/ 里散落文件。
+  // 用隐藏文件名，和本次探测结果 platforms.json 区分开。
+  return path.join(path.resolve(outDir ?? '.env-prep'), '.platforms.json');
 }
 
 function readRegistry(file) {
@@ -1693,7 +1691,7 @@ function addRegistrySites(registry, profile, domains, store) {
       kinds: item.kinds ?? rule?.kinds ?? [],
       source: 'registry',
       ruleId: item.id ?? rule?.id ?? null,
-      evidence: [`跨项目登记表${sameProject ? `（${profile.project}）` : sameDomain ? `（同域 ${domain}）` : ''}`],
+      evidence: [`平台登记表${sameProject ? `（${profile.project}）` : sameDomain ? `（同域 ${domain}）` : ''}`],
     });
   }
 }
@@ -2131,8 +2129,8 @@ async function main() {
     console.log('  --no-probe            只看静态线索，不发任何探测请求');
     console.log('  --no-scan             不探测同域候选（脚本/书签/登记表仍参与）');
     console.log('  --no-bookmarks        不读浏览器书签');
-    console.log('  --no-registry         不读也不写跨项目平台登记表');
-    console.log('  --registry <file>     登记表路径，默认 <project>/.platforms.json');
+    console.log('  --no-registry         不读也不写平台登记表');
+    console.log('  --registry <file>     登记表路径，默认 <out>/.platforms.json');
     console.log('  --no-write-profile    discover 只写 platforms.json，不改 profile');
     console.log('  --probe-budget 24     同域候选探测的请求上限');
     console.log('  discover <profile>    探测日志/发布/缺陷平台入口，写 platforms.json 并合并回 profile');

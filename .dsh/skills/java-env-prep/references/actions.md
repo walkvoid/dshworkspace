@@ -261,7 +261,7 @@ node scripts/env-prep.mjs platforms env-profile.json       # 只读已保存结�
 | 3 | 用户显式写的 URL + 名字/备注 | `provided` | 关键词按词边界匹配，`login`/`lowcode` 不会命中 `log` |
 | 4 | 已知套件（`KNOWN_SITES`） | `suite` | BeeCloud=日志+发布、AIO=缺陷、Jenkins=发布、Grafana/Kibana=日志、Jira/禅道/TAPD/Redmine=缺陷、Argo CD=发布 |
 | 5 | 页面特征 | `signature` | 标题/正文命中 `应用观测`/`qaBug`/`DevOps` 等；只用于补类型，不单独定站点 |
-| 6 | 跨项目登记表 | `registry` | `<工作目录>/project/.platforms.json`，同项目或同域复用；只存 URL 与类型，**不含凭据** |
+| 6 | 平台登记表 | `registry` | `<out>/.platforms.json`，同一 outDir 重复探测时复用；只存 URL 与类型，**不含凭据** |
 | 7 | 浏览器书签 | `bookmark` | 只读 Chrome/Edge/Brave 的 `Bookmarks`，按已知套件/同域/关键词筛选，保留文件夹路径作证据 |
 | 8 | 同域候选 | `hostname` | 固定平台名（beecloud/aio/jenkins/grafana/jira…）+ profile 里出现过的协议/端口 |
 
@@ -296,7 +296,7 @@ node scripts/env-prep.mjs platforms env-profile.json       # 只读已保存结�
   "missing": [],
   "sites": [],
   "attempts": [],
-  "registry": "D:\\github\\dshworkspace\\project\\.platforms.json"
+  "registry": "D:\\github\\dshworkspace\\project\\jasolar\\.env-prep\\.platforms.json"
 }
 ```
 
@@ -305,7 +305,7 @@ node scripts/env-prep.mjs platforms env-profile.json       # 只读已保存结�
 - 站点脚本统一放 `.env-prep/tools/<站点>/<站点>.mjs`，会话与查询条件也放在同一站点目录；
 - 主入口同时合并回 profile 的 `platforms` / `logs` / `release` / `bug`（写前备份 `env-profile.json.bak`），
   用户手写的条目不会被覆盖；
-- 探测结果与站点脚本名一起进跨项目登记表，下一个项目可直接复用。
+- 探测结果与站点脚本名一起进平台登记表，同一 outDir 下次探测时可直接复用。
 
 ### 安全边界
 

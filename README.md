@@ -148,7 +148,8 @@ node scripts/stock-data.mjs all hk:02318      # 港股：行情 + 派息公告�
 - **只克隆最近 30 天有提交的仓库**（`--max-age` 可调，`--max-age 0` 关闭），长期不动的仓库会被跳过并列出最后提交时间；
 - **环境准备的所有产物都收在 `<项目>/.env-prep/`**：profile、nacos、MCP 片段、书签备份、平台清单、
   站点脚本（`tools/<站点>/`）与会话；代码仓库仍平铺在 `<项目>/` 下；
-- **没写日志/发布/缺陷平台时自动探测**：先读项目站点脚本（`.env-prep/tools/<站点>/`）与跨项目登记表，
+- **没写日志/发布/缺陷平台时自动探测**：先读项目站点脚本（`.env-prep/tools/<站点>/`）与平台登记表
+  （`.env-prep/.platforms.json`），
   再看同域平台名（BeeCloud/Jenkins/Grafana/AIO…）并只读浏览器书签；结果写 `<out>/platforms.json` 并合并回
   profile 的 `platforms`/`release`/`bug`。实测 jasolar：BeeCloud 同时是日志与发布，AIO 是缺陷；
   探测有上限（默认 24 次请求），`--no-probe` / `--no-scan` / `--no-bookmarks` 可逐项关闭；
