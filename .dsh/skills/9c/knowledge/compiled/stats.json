@@ -1,21 +1,25 @@
 {
-  "generatedAt": "2026-11-04T07:19:08.803Z",
-  "claims": 14,
+  "generatedAt": "2026-11-05T15:45:11.251Z",
+  "claims": 461,
   "active": 14,
   "byStatus": {
-    "active": 14
+    "active": 14,
+    "candidate": 447
   },
   "byType": {
-    "rule": 12,
-    "caveat": 1,
-    "definition": 1
+    "rule": 337,
+    "caveat": 70,
+    "definition": 21,
+    "case": 15,
+    "prediction": 18
   },
   "byDimension": {
-    "risk": 2,
-    "valuation": 4,
-    "portfolio": 4,
-    "business": 1,
-    "cashflow": 2,
-    "edge": 1
+    "risk": 68,
+    "valuation": 134,
+    "portfolio": 65,
+    "business": 97,
+    "cashflow": 57,
+    "edge": 14,
+    "other": 26
   }
 }
