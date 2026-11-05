@@ -182,9 +182,37 @@ node .dsh/skills/java-project-tour/scripts/tour.mjs scan --project project/<项�
 - **核心机制**：`core.json` 标记核心功能点 / 核心流程 / 核心类 / 核心表，后续技能先读 `core.md` 再查全量索引，
   `find` 命中的核心项带 `★` 并优先排序；
 - 查询：`find <关键词>`、`where "<改动意图>"`、`context <path>`、`status`；
-- 只读：不执行构建、不连库、不改业务代码；细节见 [`.dsh/skills/java-project-tour/SKILL.md`](./.dsh/skills/java-project-tour/SKILL.md)。
+- 只读：不执行构建、不写业务代码；连库只用于「取表行数」的只读查询（走数据库 MCP，`SELECT` /
+  `information_schema`，优先 qa/test），不改数据、不改配置；细节见 [`.dsh/skills/java-project-tour/SKILL.md`](./.dsh/skills/java-project-tour/SKILL.md)。
 
-### 2.5 iFinD 数据源（可选）
+### 2.5 需求分析（`java-requirement-analysis`）
+
+把一份需求文档拆成能排期、能开发、能验收的清单：
+
+```text
+/java-requirement-analysis
+（贴需求文档，或说“分析 docs/PRD.docx 这个需求”）
+```
+
+```bash
+node .dsh/skills/java-requirement-analysis/scripts/req.mjs init --project project/<项目> \
+  --version 3.0.0 --slug jasolar-saas --title "本地化转SaaS对接" --source "docs/PRD.docx"
+node .dsh/skills/java-requirement-analysis/scripts/req.mjs estimate .requirements/req-v3.0.0-jasolar-saas/requirement.json
+node .dsh/skills/java-requirement-analysis/scripts/req.mjs validate .requirements/req-v3.0.0-jasolar-saas/requirement.json
+```
+
+- **先归业务域**（客户与建档 / 产品与开通 / 额度 / 资产与开立 / 流转融资 / 作废 / 兑付 / 查询 /
+  报送 / 通知 / 渠道 / 平台），**再标技术大类**（api / model / schema / flow / ui / auth / job / mq / integration /
+  config / query / nfr），报告先给域分布（业务视角）再给类分布（技术视角），最后拆「可独立验收」的子需求；
+- **需求文档 = 正文 + 内嵌图片 + 附件**：Word 里的流程图/原型图、接口文档表格（Excel/Word/Markdown/Swagger 导出）、
+  DDL 与报文样例都登记成 `sources` 并纳入分析，接口字段与错误码以附件为准；
+- 改动点对照 `.knowledge/` 给 `path:line` 与置信度；新功能给到 `layer / className / methods / package / 参照类`；
+- 每个子需求按改动点估 P50 / P90 人天（`estimate` 重算，不手填），需求级汇总含 10% 评审统筹；
+- 文档没说清、代码里找不到的，全部进澄清问题（P0 阻塞 / P1 影响估时 / P2 可后置）；P0 未清零时状态只能是 `draft`；
+- **需求 id 按版本命名**（`req-v3.0.0-<短名>`），先剔除画线删除与下版本章节，再对流程图/原型图做图片识别、落成节点与分支；
+- 产物在 `<项目根>/.requirements/<需求 id>/`：`requirement.json`（事实来源）+ `analysis.md`（人读报告），默认不入库。
+
+### 2.6 iFinD 数据源（可选）
 
 同花顺 MCP，给行情做兜底与交叉校验；不接也能正常用（行情走腾讯）。接入后 `data/providers/ifind.mjs`
 把官方技能包的 `call-node.js` 包成 provider，只吃结构化快照（`stock_highfreq_quotes` 的 `real_time`）。
@@ -200,6 +228,7 @@ financial-dashboard/       看板插件（bundle 根，含 package.json / cordis
 .dsh/skills/9c/            人格技能：SKILL.md + persona / framework / style / eval
 .dsh/skills/java-env-prep/ 环境准备技能：SKILL.md + scripts/env-prep.mjs + references/
 .dsh/skills/java-project-tour/ 项目导览技能：SKILL.md + scripts/tour.mjs + references/schema.md
+.dsh/skills/java-requirement-analysis/ 需求分析技能：SKILL.md + scripts/req.mjs + references/change-taxonomy.md
 scripts/                   安装与取数 CLI：install-skills / stock-data / verify-quotes
 data/                      统一取数层：index / policy / instruments / cache / errors / providers
 SKILL_INSTALL_GUIDE.md     写给 Agent 的安装引导（支持点名只装某一块）

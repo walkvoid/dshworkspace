@@ -21,6 +21,7 @@ https://raw.githubusercontent.com/walkvoid/dshworkspace/main/SKILL_INSTALL_GUIDE
 | 史诗级韭菜 | 技能（1 个目录） | `/9c`、`/史诗级韭菜` 人格分析技能 | 必装 |
 | Java 环境准备 | 技能（1 个目录） | 「Java 程序员技能包」第 1 个模块 `/java-env-prep`：把资料里的库、各环境、nacos、仓库变成能开工的机器 | Java 项目装 |
 | 项目导览 | 技能（1 个目录） | 「Java 程序员技能包」第 2 个模块 `/java-project-tour`：把项目扫成 `.knowledge/` 索引（有工作流按流程、没有就按入口推断功能点），回答“功能在哪、改哪要动哪些文件” | Java 项目装 |
+| 需求分析 | 技能（1 个目录） | 「Java 程序员技能包」第 3 个模块 `/java-requirement-analysis`：按业务域与技术大类双维度把需求文档拆成子需求、代码锚点、新增类/方法与估时，并列出澄清问题 | Java 项目装 |
 | iFinD 数据源 | 第三方技能（可选） | 同花顺 MCP，提供行情兜底与交叉校验 | 可选，需密钥 |
 
 史诗级韭菜技能依赖仓库里的 `scripts/` 和 `data/`（两千多行），**所以仓库本身必须留在磁盘上**，不能只拷 SKILL.md。
@@ -33,6 +34,7 @@ https://raw.githubusercontent.com/walkvoid/dshworkspace/main/SKILL_INSTALL_GUIDE
 | 史诗级韭菜、龟龟法、龟龟投资法、9c、`/9c` | `9c` | 按「史诗级韭菜」的龟龟投资法评估一只 A 股 |
 | Java 环境准备、环境准备、`/环境准备`、`/java-env-prep` | `java-env-prep` | 把一份资料变成能开工的 Java 开发环境（见第 2.5 步） |
 | 项目导览、代码地图、导览、`/java-project-tour`、`/代码地图` | `java-project-tour` | 把多仓库 Java 项目扫成 `.knowledge/` 索引，回答“功能在哪、改哪要动哪些文件” |
+| 需求分析、需求评审、`/java-requirement-analysis`、`/需求分析` | `java-requirement-analysis` | 把需求文档拆成改动大类 / 子需求 / 代码改动点 / 新增类 / 估时 / 澄清问题 |
 
 用户把这份文档交给 Agent 时，通常会在同一句话里点名要装什么，例如：
 
@@ -45,7 +47,8 @@ https://raw.githubusercontent.com/walkvoid/dshworkspace/main/SKILL_INSTALL_GUIDE
 | "安装史诗级韭菜"、"装 9c 那个技能" | 只装 `9c`：`--skills 9c` |
 | "安装环境准备"、"配一下 Java 环境" | 只装 `java-env-prep`：`--skills java-env-prep` |
 | "安装项目导览"、"扫一下这个项目" | 只装 `java-project-tour`：`--skills java-project-tour` |
-| 没点名 / "全部安装" / 只说"完成安装" | 把清单里的技能全列出来：`--skills 9c,java-env-prep,java-project-tour`（当前三项） |
+| "安装需求分析"、"分析这个需求" | 只装 `java-requirement-analysis`：`--skills java-requirement-analysis` |
+| 没点名 / "全部安装" / 只说"完成安装" | 把清单里的技能全列出来：`--skills 9c,java-env-prep,java-project-tour,java-requirement-analysis`（当前四项） |
 | 点名的名字在表里找不到 | **停下来问一句**，不要猜、不要装错技能 |
 
 - 多个技能用逗号连起来：`--skills 9c,java-env-prep`；

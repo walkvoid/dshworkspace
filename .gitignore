@@ -12,6 +12,9 @@ Thumbs.db
 .env-prep/
 *.env-profile.json
 
+# Requirement analysis output quotes PRDs, which are often confidential.
+.requirements/
+
 # 9c video transcripts/prompts are local research material; only distilled claims belong in the repo.
 .dsh/skills/9c/knowledge/transcripts/*.md
 !.dsh/skills/9c/knowledge/transcripts/README.md

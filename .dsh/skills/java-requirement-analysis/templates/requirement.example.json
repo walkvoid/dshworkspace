@@ -1,0 +1,328 @@
+{
+  "schema": 2,
+  "id": "req-20261105-asset-seal",
+  "title": "资产签发支持电子签章",
+  "project": "jasolar",
+  "status": "draft",
+  "receivedAt": "2026-11-05",
+  "sources": [
+    {
+      "id": "SRC-1",
+      "file": "docs/PRD-资产签发-电子签章.docx",
+      "kind": "document",
+      "locator": "p.1-12",
+      "note": "产品：张三；评审 2026-11-06"
+    },
+    {
+      "id": "SRC-2",
+      "file": "docs/PRD-资产签发-电子签章.docx#图2",
+      "kind": "image",
+      "locator": "p.5 签章记录表结构图",
+      "note": "字段名以图为准"
+    },
+    {
+      "id": "SRC-3",
+      "file": "docs/附件1-签发接口定义.xlsx",
+      "kind": "api",
+      "locator": "Sheet1!A1:H18",
+      "note": "签发接口字段与错误码"
+    }
+  ],
+  "subRequirements": [
+    {
+      "id": "SR-1",
+      "title": "签发接口增加签章方式参数",
+      "category": "api",
+      "secondary": [
+        "model"
+      ],
+      "action": "modify",
+      "sourceId": "SRC-3",
+      "locator": "Sheet1 第 6 行 sealType",
+      "quote": "sealType：枚举 NONE / PLATFORM / THIRD，必填（附件1 · 签发接口）",
+      "acceptance": [
+        "不传时保持原行为",
+        "非法签章方式返回 400",
+        "老版本调用方不受影响"
+      ],
+      "changePoints": [
+        {
+          "kind": "http",
+          "file": "service-a-web/src/main/java/com/example/asset/controller/AssetIssueController.java",
+          "line": 87,
+          "symbol": "AssetIssueController#issue",
+          "confidence": "verified",
+          "note": "签发入口"
+        },
+        {
+          "kind": "model",
+          "file": "service-a-api/src/main/java/com/example/asset/dto/AssetIssueRequest.java",
+          "line": 34,
+          "symbol": "AssetIssueRequest",
+          "confidence": "verified",
+          "note": "请求体，加 sealType"
+        }
+      ],
+      "newCode": [],
+      "estimate": {
+        "parts": [
+          {
+            "name": "后端接口与校验",
+            "days": 1
+          },
+          {
+            "name": "自测",
+            "days": 0.25
+          }
+        ],
+        "factors": [
+          {
+            "name": "动核心流程",
+            "multiplier": 1.3
+          }
+        ],
+        "buffer": 1.5,
+        "p50": 1.75,
+        "p90": 2.75,
+        "note": ""
+      },
+      "risks": [
+        "老客户端不传参数，必须默认“无签章”"
+      ],
+      "dependsOn": [],
+      "openQuestions": [
+        "Q-3"
+      ],
+      "domain": "asset",
+      "secondaryDomains": []
+    },
+    {
+      "id": "SR-2",
+      "title": "新增签章记录表与查询",
+      "category": "schema",
+      "secondary": [
+        "query"
+      ],
+      "action": "add",
+      "sourceId": "SRC-2",
+      "locator": "p.5 图2",
+      "quote": "图2：asset_seal 表含签发单号、签章时间、签章方式、签章结果（p.5）",
+      "acceptance": [
+        "同一签发单多次签章都有记录",
+        "查询接口返回签章时间、方式、结果"
+      ],
+      "changePoints": [
+        {
+          "kind": "table",
+          "file": "service-a/src/main/resources/mapper/AssetSealMapper.xml",
+          "line": 1,
+          "symbol": "asset_seal",
+          "confidence": "inferred",
+          "note": "新表，DDL 见 p.5 附1"
+        }
+      ],
+      "newCode": [
+        {
+          "layer": "entity",
+          "className": "AssetSeal",
+          "methods": [],
+          "package": "com.example.asset.entity",
+          "pattern": "参照 AssetIssue 的实体写法",
+          "reason": "签章记录持久化"
+        },
+        {
+          "layer": "mapper",
+          "className": "AssetSealMapper",
+          "methods": [
+            "insert(AssetSeal seal)",
+            "selectByIssueNo(String issueNo)"
+          ],
+          "package": "com.example.asset.mapper",
+          "pattern": "参照 AssetIssueMapper",
+          "reason": "写入与按签发单查询"
+        }
+      ],
+      "estimate": {
+        "parts": [
+          {
+            "name": "建表与实体/Mapper",
+            "days": 0.25
+          },
+          {
+            "name": "迁移与回滚脚本",
+            "days": 0.5
+          },
+          {
+            "name": "自测",
+            "days": 0.25
+          }
+        ],
+        "factors": [
+          {
+            "name": "动核心表",
+            "multiplier": 1.3
+          }
+        ],
+        "buffer": 1.5,
+        "p50": 1.5,
+        "p90": 2.25,
+        "note": ""
+      },
+      "risks": [
+        "asset_issue 是核心表，DDL 需要 DBA 窗口"
+      ],
+      "dependsOn": [
+        "SR-1"
+      ],
+      "openQuestions": [
+        "Q-2"
+      ],
+      "domain": "asset",
+      "secondaryDomains": []
+    },
+    {
+      "id": "SR-3",
+      "title": "接入第三方签章服务",
+      "category": "integration",
+      "secondary": [
+        "flow"
+      ],
+      "action": "add",
+      "sourceId": "SRC-1",
+      "locator": "p.6",
+      "quote": "平台签章调用第三方电子签章服务，失败可重试（p.6）",
+      "acceptance": [
+        "签章成功返回签章文件地址",
+        "超时按配置重试，最多 2 次",
+        "失败原因可追溯"
+      ],
+      "changePoints": [
+        {
+          "kind": "class",
+          "file": "service-a/src/main/java/com/example/asset/service/AssetIssueService.java",
+          "line": 210,
+          "symbol": "AssetIssueService#issue",
+          "confidence": "verified",
+          "note": "签发成功后触发签章"
+        }
+      ],
+      "newCode": [
+        {
+          "layer": "service",
+          "className": "AssetSealService",
+          "methods": [
+            "seal(AssetSealCommand cmd)",
+            "queryResult(String sealNo)"
+          ],
+          "package": "com.example.asset.service",
+          "pattern": "参照 AssetIssueService 的接口 + Impl 拆分",
+          "reason": "签章调用需要独立事务与重试"
+        },
+        {
+          "layer": "config",
+          "className": "SealClientConfig",
+          "methods": [],
+          "package": "com.example.asset.config",
+          "pattern": "参照现有 RestTemplate 配置",
+          "reason": "第三方地址、超时、密钥配置"
+        }
+      ],
+      "estimate": {
+        "parts": [
+          {
+            "name": "适配层与重试",
+            "days": 2
+          },
+          {
+            "name": "联调第三方",
+            "days": 1
+          },
+          {
+            "name": "自测",
+            "days": 0.5
+          }
+        ],
+        "factors": [
+          {
+            "name": "动核心流程",
+            "multiplier": 1.3
+          },
+          {
+            "name": "首次接第三方",
+            "multiplier": 1.3
+          }
+        ],
+        "buffer": 1.5,
+        "p50": 6,
+        "p90": 9,
+        "note": "第三方测试环境预计 11-10 才可用"
+      },
+      "risks": [
+        "第三方测试环境未就绪，联调可能顺延",
+        "重试与幂等键需要对方确认"
+      ],
+      "dependsOn": [
+        "SR-1"
+      ],
+      "openQuestions": [
+        "Q-1"
+      ],
+      "domain": "asset",
+      "secondaryDomains": [
+        "asset"
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-1",
+      "severity": "P0",
+      "question": "平台签章失败时，签发单是否整单回滚？",
+      "why": "原文只写“失败可重试”，未定义事务边界（p.6）",
+      "assumption": "整单回滚，用户重新发起；已生成的签发单置为“签章失败”状态",
+      "owner": "产品/张三",
+      "affects": [
+        "SR-3"
+      ],
+      "resolved": false
+    },
+    {
+      "id": "Q-2",
+      "severity": "P1",
+      "question": "历史签发单要不要补签章记录？",
+      "why": "原文只提“每次签章留痕”，未说明存量数据（p.5）",
+      "assumption": "不补历史，只记录上线后的签章",
+      "owner": "产品/张三",
+      "affects": [
+        "SR-2"
+      ],
+      "resolved": false
+    },
+    {
+      "id": "Q-3",
+      "severity": "P2",
+      "question": "签章方式在页面上如何展示？",
+      "why": "原文只给了枚举值，没有交互稿（p.4）",
+      "assumption": "下拉框，默认“无签章”",
+      "owner": "设计/李四",
+      "affects": [
+        "SR-1"
+      ],
+      "resolved": false
+    }
+  ],
+  "totals": {
+    "p50": 9.25,
+    "p90": 14,
+    "byCategory": {
+      "api": 1.75,
+      "schema": 1.5,
+      "integration": 6
+    },
+    "byDomain": {
+      "asset": 9.25
+    }
+  },
+  "generatedAt": "2026-11-05T08:00:00.000Z",
+  "updatedAt": "2026-11-05T09:33:50.987Z"
+}

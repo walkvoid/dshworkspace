@@ -409,6 +409,6 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
 ## 六、与其他模块的衔接
 
 本技能是「Java 程序员技能包」的第一块，后续模块见 `references/roadmap.md`：
-项目导览 → 需求分析 → 代码编写 → 单元资产 → bug 修复 → 上下检查。
+项目导览 → 需求分析 → 代码编写 → 单元测试 → bug修复 → 上线检查。
 环境准备产出的 `env-profile.json` 是后续模块的共同输入（连库、看日志、跑构建都要用）；
 平台入口另存一份 `<out>/platforms.json`，字段见 `references/profile-schema.md` 的 `platforms` 一节。
