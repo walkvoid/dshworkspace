@@ -319,9 +319,23 @@ export function apply(ctx) {
         return;
       }
 
-      // 看板每天 16:05 生成一份；当天还没生成时，沿用最近一份并标明日期。
+      // 看板每天 16:05 生成一份；手动 refresh 时立刻重跑并覆盖当天结果。
       const store = readStore(STORE_FILE);
       const today = dateKey();
+      const refresh = url.searchParams.get('refresh') === '1';
+
+      if (refresh) {
+        const forced = await ensureToday(true);
+        sendJson(res, 200, {
+          ok: true,
+          ...forced,
+          historical: false,
+          thresholds: THRESHOLDS,
+          universeSize: forced.universe ?? UNIVERSE.length,
+        });
+        return;
+      }
+
       const run = store.runs?.[today];
       if (run !== undefined) {
         sendJson(res, 200, {
@@ -329,19 +343,7 @@ export function apply(ctx) {
           ...run,
           historical: false,
           thresholds: THRESHOLDS,
-          universeSize: UNIVERSE.length,
-        });
-        return;
-      }
-
-      if (url.searchParams.get('refresh') === '1') {
-        const forced = await ensureToday(true);
-        sendJson(res, 200, {
-          ok: true,
-          ...forced,
-          historical: false,
-          thresholds: THRESHOLDS,
-          universeSize: UNIVERSE.length,
+          universeSize: run.universe ?? UNIVERSE.length,
         });
         return;
       }
@@ -355,7 +357,7 @@ export function apply(ctx) {
           ...seeded,
           historical: false,
           thresholds: THRESHOLDS,
-          universeSize: UNIVERSE.length,
+          universeSize: seeded.universe ?? UNIVERSE.length,
         });
         return;
       }
@@ -365,7 +367,7 @@ export function apply(ctx) {
         historical: true,
         carriedOver: true,
         thresholds: THRESHOLDS,
-        universeSize: UNIVERSE.length,
+        universeSize: latest.universe ?? UNIVERSE.length,
         nextRunAt: nextDailyRunIso(),
       });
     } catch (error) {

@@ -6,7 +6,7 @@
  * 会真实调用数据层（腾讯行情 + 东财 F10），并把当天结果写进 `.data/picks.json`。
  */
 import { apply, PICKS_ROUTE_PATH, nextDailyRun } from '../index.js';
-import { STORE_FILE, dateKey, readStore } from '../picks.js';
+import { STORE_FILE, dateKey, loadConnectCodes, readStore } from '../picks.js';
 
 /** 北京时间某时刻对应的 UTC 纪元毫秒。 */
 const shanghai = (y, m, d, hour, minute = 0) => Date.UTC(y, m - 1, d, hour - 8, minute, 0);
@@ -66,7 +66,7 @@ assert(nextDailyRun(shanghai(2026, 11, 6, 16, 5)) === shanghai(2026, 11, 7, 16, 
 assert(nextDailyRun(shanghai(2026, 11, 6, 23, 59)) === shanghai(2026, 11, 7, 16, 5), 'after 16:05 the next run is tomorrow 16:05');
 
 const started = Date.now();
-const first = await call('');
+const first = await call('?refresh=1');
 const elapsed = Date.now() - started;
 assert(first.statusCode === 200, 'GET picks returns 200');
 assert(first.json?.ok === true, 'ok true');
@@ -78,6 +78,26 @@ assert(
   first.json.picks.every((pick) => typeof pick.name === 'string' && typeof pick.dividendYieldPct === 'number'),
   'every pick carries name and yield',
 );
+assert(
+  first.json.picks.every((pick) => typeof pick.totalCapYi === 'number'),
+  'every pick carries market cap',
+);
+assert(
+  first.json.picks.every((pick) => 'netCashYi' in pick),
+  'every pick carries a net-cash field',
+);
+assert(
+  first.json.picks.every((pick) => 'penetrationReturn' in pick),
+  'every pick carries penetration return',
+);
+
+const connect = await loadConnectCodes();
+if (connect !== null) {
+  assert(
+    first.json.picks.every((pick) => connect.has(pick.code.replace(/^hk:/, ''))),
+    'every pick is a Stock Connect name',
+  );
+}
 assert(
   first.json.picks.every((pick) => pick.dividendYieldPct >= first.json.thresholds.minDividendYieldPct),
   'every pick passes the yield floor',
