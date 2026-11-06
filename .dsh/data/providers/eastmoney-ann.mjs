@@ -155,6 +155,25 @@ export async function readHkDividends(instrument) {
     await sleep(CONTENT_DELAY_MS);
   }
 
+  // 特别股息没有「财年 / 报告期」，上面的排序会把它们排到最后、被 6 个周期的
+  // 停止条件截掉。单独补最近两份特别股息——李宁 2026-11-05 的 60 亿就是这种。
+  const specials = [...byPeriod.values()]
+    .filter((row) => periodKeyFromTitle(row.title) === null && /特别股息|特別股息/.test(row.title))
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 2);
+  for (const announcement of specials) {
+    try {
+      const content = await readAnnouncement(announcement.artCode);
+      const fields = parseHkDividend(content);
+      if (fields.perShare !== null && fields.exDate !== null) {
+        parsed.push({ announcement, parsed: fields });
+      }
+    } catch {
+      // 同上：读不到就跳过。
+    }
+    await sleep(CONTENT_DELAY_MS);
+  }
+
   const rows = toHkDividendRows(parsed);
   if (rows.length === 0) {
     throw new ProviderError('eastmoney-ann', ERROR_CODES.NOT_FOUND, `no parsable dividend announcement for ${instrument.key}`);
