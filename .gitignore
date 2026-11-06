@@ -30,3 +30,6 @@ Thumbs.db
 # IDE state, at any depth: the dashboard is its own package and may be opened separately.
 .idea/
 *.iml
+
+# 看板运行期数据：每日选股结果与历史（本地，不入库）
+.dsh/plugins/financial-dashboard/.data/

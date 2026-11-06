@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Right-sidebar financial dashboard: index and watchlist quotes, a sub-tab for the quote board, and a 120-day candlestick chart.",
+  "description": "Right-sidebar financial dashboard: index and watchlist quotes, a 120-day candlestick chart, and a daily turtle-picks screener with history.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/walkvoid/dshworkspace.git"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node scripts/test-route.mjs"
+    "test": "node scripts/test-route.mjs",
+    "test:picks": "node scripts/test-picks.mjs"
   },
   "exports": {
     ".": "./index.js",
@@ -20,6 +21,7 @@
   },
   "files": [
     "index.js",
+    "picks.js",
     "client.js",
     "cordis.patch.yml",
     "locale/*.json",
@@ -27,7 +29,8 @@
     "README.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
-    "licenses/*.txt"
+    "licenses/*.txt",
+    "scripts/*.mjs"
   ],
   "dsh": {
     "bundle": {

@@ -67,26 +67,58 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     const NS = 'financial-dashboard';
     /** Host route serving snapshots and daily bars. */
     const ROUTE = '/financial-dashboard/quotes';
-    /** Auto-refresh cadence required by the dashboard. */
-    const REFRESH_MS = 15000;
+    /** Host route serving today's turtle picks and the history list. */
+    const PICKS_ROUTE = '/financial-dashboard/picks';
+    /** 全看板每天只在 16:05（港股收盘后）拉一次数据。 */
+    const DAILY_HOUR = 16;
+    /** 宿主 16:05 跑，页面晚一分钟再读。 */
+    const DAILY_MINUTE = 6;
     /** Index cards. */
     const INDEX_CODES = ['sh000001', 'sz399001'];
     /** Watchlist rows. */
     const WATCH_CODES = ['sh600519', 'sz000001'];
     /** Everything one poll asks the Host for. */
     const ALL_CODES = [...INDEX_CODES, ...WATCH_CODES];
-    /** The one sub-tab this dashboard page hosts today. */
+    /** Page sub-tabs. */
     const SUBTAB_QUOTES = 'quotes';
+    const SUBTAB_PICKS = 'picks';
     /** localStorage key for the up/down colour preference. */
     const UP_DOWN_KEY = 'financial-dashboard.up-down-colors';
 
     const zh = {
       'tab.title': '金融看板',
       'panel.label': '金融看板',
-      'page.subtitle': '指数与自选股行情，15 秒自动刷新',
-      'guide.title': '行情',
-      'guide.description': '指数与自选股行情，15 秒自动刷新',
+      'page.subtitle': '指数与自选股行情，每天 16:05 更新',
+      'guide.title': '金融看板',
+      'guide.description': '行情 · 指数与自选股，每天 16:05 更新',
       'subtab.quotes': '行情',
+      'subtab.picks': '龟龟选股',
+      'picks.subtitle': '按龟龟法则每天 16:05 在港股挑 10 只：高股息、低估值、派息可持续、负债可控',
+      'picks.rule': '门槛：股息率 ≥ 4.5% · PE ≤ 12 · 派息率 ≤ 95% · 负债率 ≤ 75% · 每行业最多 3 只；银行与融资租赁整类回避（他说负债表看不清楚）',
+      'picks.today': '今日',
+      'picks.generated': '生成于 {time}',
+      'picks.count': '共 {n} 只',
+      'picks.avgYield': '平均股息 {n}%',
+      'picks.history': '历史选股',
+      'picks.historyTitle': '历史选股记录',
+      'picks.historyEmpty': '还没有历史记录',
+      'picks.historyLoading': '正在读取历史…',
+      'picks.back': '返回今天',
+      'picks.refresh': '重新选股',
+      'picks.loading': '正在选股…',
+      'picks.error': '选股失败',
+      'picks.empty': '今天还没有选出标的',
+      'picks.retry': '重试',
+      'picks.close': '关闭',
+      'picks.yield': '股息率',
+      'picks.pe': 'PE',
+      'picks.pb': 'PB',
+      'picks.payout': '派息',
+      'picks.debt': '负债',
+      'picks.score': '得分',
+      'picks.note': '这是收息层粗筛，不是三因子完整分析；不构成投资建议。',
+      'picks.historical': '历史记录',
+      'picks.carried': '今天 16:05 还没到，先展示 {date} 的结果',
       'action.refresh': '刷新',
       'action.colors.redUp': '红涨绿跌',
       'action.colors.greenUp': '绿涨红跌',
@@ -97,7 +129,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       'state.stale': '上游暂不可用，正在显示缓存数据',
       'state.offline': '连接中断，正在显示上次成功的数据',
       'state.updated': '更新于 {time}',
-      'state.auto': '15 秒自动刷新',
+      'state.auto': '每天 16:05 更新',
       'state.closed': '未开盘',
       'chart.title': '日线 · 近 120 个交易日',
       'chart.empty': '暂无日线数据',
@@ -113,10 +145,37 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
     const en = {
       'tab.title': 'Financial Dashboard',
       'panel.label': 'Financial Dashboard',
-      'page.subtitle': 'Index and watchlist quotes, refreshed every 15 seconds',
-      'guide.title': 'Quotes',
-      'guide.description': 'Index and watchlist quotes, refreshed every 15 seconds',
+      'page.subtitle': 'Index and watchlist quotes, updated daily at 16:05',
+      'guide.title': 'Financial Dashboard',
+      'guide.description': 'Quotes · indices and watchlist, updated daily at 16:05',
       'subtab.quotes': 'Quotes',
+      'subtab.picks': 'Turtle Picks',
+      'picks.subtitle': 'Ten Hong Kong names a day at 16:05, screened the turtle way: yield, valuation, payout cover, debt',
+      'picks.rule': 'Rules: yield ≥ 4.5% · PE ≤ 12 · payout ≤ 95% · debt ≤ 75% · max 3 per sector; banks and leasing are excluded (he finds their balance sheets unreadable)',
+      'picks.today': 'Today',
+      'picks.generated': 'Generated {time}',
+      'picks.count': '{n} names',
+      'picks.avgYield': 'Avg yield {n}%',
+      'picks.history': 'History',
+      'picks.historyTitle': 'Past picks',
+      'picks.historyEmpty': 'No history yet',
+      'picks.historyLoading': 'Loading history…',
+      'picks.back': 'Back to today',
+      'picks.refresh': 'Rescreen',
+      'picks.loading': 'Screening…',
+      'picks.error': 'Screening failed',
+      'picks.empty': 'No names passed the screen today',
+      'picks.retry': 'Retry',
+      'picks.close': 'Close',
+      'picks.yield': 'Yield',
+      'picks.pe': 'PE',
+      'picks.pb': 'PB',
+      'picks.payout': 'Payout',
+      'picks.debt': 'Debt',
+      'picks.score': 'Score',
+      'picks.note': 'A cash-flow screen, not a full three-factor review. Not investment advice.',
+      'picks.historical': 'History',
+      'picks.carried': 'Today’s 16:05 run hasn’t happened yet — showing {date}',
       'action.refresh': 'Refresh',
       'action.colors.redUp': 'Red up / green down',
       'action.colors.greenUp': 'Green up / red down',
@@ -127,7 +186,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       'state.stale': 'Upstream unavailable — showing cached data',
       'state.offline': 'Connection lost — showing the last successful data',
       'state.updated': 'Updated {time}',
-      'state.auto': 'Auto refresh every 15s',
+      'state.auto': 'Updates daily at 16:05',
       'state.closed': 'Market closed',
       'chart.title': 'Daily · last 120 sessions',
       'chart.empty': 'No daily data',
@@ -282,13 +341,18 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
         };
 
         void run();
-        const timer = window.setInterval(() => {
-          void run();
-        }, REFRESH_MS);
+        // 不再轮询：只在下一个 16:06 自动刷新一次（给宿主 16:05 的拉数据留一分钟）。
+        const now = new Date();
+        const next = new Date(now);
+        next.setHours(DAILY_HOUR, DAILY_MINUTE, 0, 0);
+        if (next <= now) next.setDate(next.getDate() + 1);
+        const timer = window.setTimeout(() => {
+          setNonce((value) => value + 1);
+        }, next.getTime() - now.getTime());
         return () => {
           cancelled = true;
           controller.abort();
-          window.clearInterval(timer);
+          window.clearTimeout(timer);
         };
       }, [key, dailyCode, visible, nonce]);
 
@@ -512,6 +576,262 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       );
     }
 
+    /** One request for today's picks (or one historical date). */
+    function usePicks(visible, date) {
+      const [state, setState] = React.useState({ data: null, error: null, loading: true });
+      const [nonce, setNonce] = React.useState(0);
+      React.useEffect(() => {
+        if (!visible) return undefined;
+        const controller = new AbortController();
+        let cancelled = false;
+        setState((prev) => ({ ...prev, loading: true }));
+        const load = async () => {
+          const search = new URLSearchParams();
+          if (typeof date === 'string' && date !== '') search.set('date', date);
+          else if (nonce > 0) search.set('refresh', '1');
+          const query = search.toString();
+          try {
+            const response = await fetch(query === '' ? PICKS_ROUTE : `${PICKS_ROUTE}?${query}`, {
+              signal: controller.signal,
+              headers: { accept: 'application/json' },
+              cache: 'no-store',
+            });
+            const body = await response.json().catch(() => null);
+            if (cancelled) return;
+            if (!response.ok || body === null || body.ok === false) {
+              throw new Error(body !== null && typeof body.error === 'string' ? body.error : `HTTP ${response.status}`);
+            }
+            setState({ data: body, error: null, loading: false });
+          } catch (error) {
+            if (cancelled || error.name === 'AbortError') return;
+            setState((prev) => ({ data: prev.data, error: error.message, loading: false }));
+          }
+        };
+        load();
+        return () => {
+          cancelled = true;
+          controller.abort();
+        };
+      }, [visible, date, nonce]);
+      return { ...state, refresh: () => setNonce((value) => value + 1) };
+    }
+
+    /** The history list, fetched only while the sheet is open. */
+    function usePickHistory(open) {
+      const [state, setState] = React.useState({ days: null, loading: false, error: null });
+      React.useEffect(() => {
+        if (!open) return undefined;
+        const controller = new AbortController();
+        let cancelled = false;
+        setState((prev) => ({ ...prev, loading: true }));
+        fetch(`${PICKS_ROUTE}?history=1`, { signal: controller.signal, headers: { accept: 'application/json' }, cache: 'no-store' })
+          .then((response) => response.json().then((body) => ({ response, body })))
+          .then(({ response, body }) => {
+            if (cancelled) return;
+            if (!response.ok || body?.ok !== true) throw new Error(body?.error ?? `HTTP ${response.status}`);
+            setState({ days: Array.isArray(body.days) ? body.days : [], loading: false, error: null });
+          })
+          .catch((error) => {
+            if (!cancelled) setState({ days: null, loading: false, error: error.message });
+          });
+        return () => {
+          cancelled = true;
+          controller.abort();
+        };
+      }, [open]);
+      return state;
+    }
+
+    /** One stock in the daily list. */
+    function PickRow({ pick, t }) {
+      const payout = typeof pick.payoutRatio === 'number' ? `${Math.round(pick.payoutRatio * 100)}%` : '—';
+      const score = typeof pick.score === 'number' ? pick.score : null;
+      return h(
+        'li',
+        { className: 'fnd-pick' },
+        h('span', { className: 'fnd-pick-rank' }, String(pick.rank ?? '')),
+        h(
+          'div',
+          { className: 'fnd-pick-main' },
+          h(
+            'div',
+            { className: 'fnd-pick-name-row' },
+            h('span', { className: 'fnd-pick-name' }, pick.name ?? pick.code),
+            h('span', { className: 'fnd-pick-code' }, pick.code),
+            h('span', { className: 'fnd-pick-sector' }, pick.sector ?? ''),
+          ),
+          h(
+            'div',
+            { className: 'fnd-pick-metrics' },
+            h('span', null, `${t('picks.yield')} ${pick.dividendYieldPct ?? '—'}%`),
+            h('span', null, `PE ${pick.pe ?? '—'}`),
+            h('span', null, `PB ${pick.pb ?? '—'}`),
+            h('span', null, `${t('picks.payout')} ${payout}`),
+            h('span', null, `${t('picks.debt')} ${pick.debtRatio ?? '—'}%`),
+          ),
+        ),
+        h(
+          'div',
+          { className: 'fnd-pick-score', title: t('picks.score') },
+          h('span', { className: 'fnd-pick-score-value' }, score === null ? '—' : score.toFixed(1)),
+          h(
+            'span',
+            { className: 'fnd-pick-score-bar' },
+            h('span', { className: 'fnd-pick-score-fill', style: { width: `${Math.max(0, Math.min(100, score ?? 0))}%` } }),
+          ),
+        ),
+      );
+    }
+
+    /** 龟龟选股：今日榜单 + 历史选股。 */
+    function PicksView({ t, visible, variant }) {
+      const isPage = variant === 'page';
+      const [date, setDate] = React.useState(null);
+      const [historyOpen, setHistoryOpen] = React.useState(false);
+      const { data, error, loading, refresh } = usePicks(visible, date);
+      const history = usePickHistory(historyOpen);
+
+      const picks = Array.isArray(data?.picks) ? data.picks : [];
+      const avgYield =
+        picks.length === 0
+          ? null
+          : picks.reduce((sum, pick) => sum + (typeof pick.dividendYieldPct === 'number' ? pick.dividendYieldPct : 0), 0) / picks.length;
+      const generated = data?.generatedAt ? new Date(data.generatedAt) : null;
+      const generatedLabel =
+        generated !== null && !Number.isNaN(generated.getTime())
+          ? `${String(generated.getHours()).padStart(2, '0')}:${String(generated.getMinutes()).padStart(2, '0')}`
+          : '—';
+
+      const header = h(
+        'div',
+        { className: 'fnd-picks-head' },
+        h(
+          'div',
+          { className: 'fnd-picks-head-text' },
+          h('h2', { className: 'fnd-picks-title' }, t('subtab.picks')),
+          h('p', { className: 'fnd-picks-sub' }, t('picks.subtitle')),
+          h('p', { className: 'fnd-picks-rule' }, t('picks.rule')),
+        ),
+        h(
+          'div',
+          { className: 'fnd-toolbar-actions' },
+          date === null
+            ? h(
+                'button',
+                { type: 'button', className: 'fnd-button', onClick: refresh, disabled: loading },
+                h(RefreshGlyph, { size: 12 }),
+                h('span', null, t('picks.refresh')),
+              )
+            : h('button', { type: 'button', className: 'fnd-button', onClick: () => setDate(null) }, h('span', null, t('picks.back'))),
+          h(
+            'button',
+            { type: 'button', className: 'fnd-button', onClick: () => setHistoryOpen((value) => !value) },
+            h('span', null, t('picks.history')),
+          ),
+        ),
+      );
+
+      const meta =
+        data === null
+          ? null
+          : h(
+              'div',
+              { className: 'fnd-picks-meta' },
+              data.carriedOver === true
+                ? h('span', null, t('picks.carried', { date: data.date ?? '' }))
+                : h('span', null, `${data.date ?? ''}${data.historical === true ? ` · ${t('picks.historical')}` : ''}`),
+              h('span', { className: 'fnd-sep' }, '·'),
+              h('span', { className: 'fnd-muted' }, t('picks.generated', { time: generatedLabel })),
+              h('span', { className: 'fnd-sep' }, '·'),
+              h('span', { className: 'fnd-muted' }, t('picks.count', { n: picks.length })),
+              avgYield === null
+                ? null
+                : h(
+                    React.Fragment,
+                    null,
+                    h('span', { className: 'fnd-sep' }, '·'),
+                    h('span', { className: 'fnd-muted' }, t('picks.avgYield', { n: avgYield.toFixed(2) })),
+                  ),
+            );
+
+      const body =
+        loading && data === null
+          ? h('div', { className: 'fnd-picks-empty' }, t('picks.loading'))
+          : error !== null && data === null
+            ? h('div', { className: 'fnd-picks-empty' }, `${t('picks.error')}：${error}`)
+            : picks.length === 0
+              ? h('div', { className: 'fnd-picks-empty' }, t('picks.empty'))
+              : h('ol', { className: 'fnd-picks-list' }, picks.map((pick) => h(PickRow, { key: pick.code, pick, t })));
+
+      const overlay = !historyOpen
+        ? null
+        : h(
+            'div',
+            {
+              className: 'fnd-picks-overlay',
+              role: 'dialog',
+              'aria-label': t('picks.historyTitle'),
+              onClick: (event) => {
+                if (event.target === event.currentTarget) setHistoryOpen(false);
+              },
+            },
+            h(
+              'div',
+              { className: 'fnd-picks-sheet' },
+              h(
+                'header',
+                { className: 'fnd-picks-sheet-head' },
+                h('span', { className: 'fnd-section-title' }, t('picks.historyTitle')),
+                h('button', { type: 'button', className: 'fnd-button', onClick: () => setHistoryOpen(false) }, t('picks.close')),
+              ),
+              history.loading
+                ? h('div', { className: 'fnd-picks-empty' }, t('picks.historyLoading'))
+                : history.error !== null
+                  ? h('div', { className: 'fnd-picks-empty' }, history.error)
+                  : (history.days ?? []).length === 0
+                    ? h('div', { className: 'fnd-picks-empty' }, t('picks.historyEmpty'))
+                    : h(
+                        'ul',
+                        { className: 'fnd-picks-history' },
+                        (history.days ?? []).map((day) =>
+                          h(
+                            'li',
+                            { key: day.date },
+                            h(
+                              'button',
+                              {
+                                type: 'button',
+                                className: `fnd-pick-history-item${day.date === data?.date ? ' is-active' : ''}`,
+                                onClick: () => {
+                                  setDate(day.date);
+                                  setHistoryOpen(false);
+                                },
+                              },
+                              h('span', { className: 'fnd-pick-history-date' }, day.date),
+                              h(
+                                'span',
+                                { className: 'fnd-pick-history-meta' },
+                                `${t('picks.count', { n: day.count })}${day.avgYield === null ? '' : ` · ${t('picks.avgYield', { n: day.avgYield })}`}`,
+                              ),
+                              h('span', { className: 'fnd-pick-history-top' }, (day.top ?? []).join(' / ')),
+                            ),
+                          ),
+                        ),
+                      ),
+            ),
+          );
+
+      return h(
+        'div',
+        { className: isPage ? 'fnd-picks fnd-picks-page' : 'fnd-picks' },
+        header,
+        meta,
+        body,
+        h('p', { className: 'fnd-picks-note' }, t('picks.note')),
+        overlay,
+      );
+    }
+
     /** The shared dashboard view behind the right-sidebar tab and the left-sidebar panel. */
     function DashboardView({ visible, useTheme, t, variant }) {
       const isPage = variant === 'page';
@@ -519,7 +839,7 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       const [preference, setPreference] = React.useState(readUpDownPreference);
       const [selected, setSelected] = React.useState(WATCH_CODES[0]);
       const [view, setView] = React.useState(SUBTAB_QUOTES);
-      const { data, error, loading, refresh } = useQuotes(selected, visible);
+      const { data, error, loading, refresh } = useQuotes(selected, visible && view === SUBTAB_QUOTES);
 
       const quotes = Array.isArray(data?.quotes) ? data.quotes : [];
       const byCode = new Map(quotes.map((quote) => [quote.code, quote]));
@@ -571,7 +891,10 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
       );
 
       const cardCodes = isPage ? ALL_CODES : INDEX_CODES;
-      const subTabs = [{ id: SUBTAB_QUOTES, label: t('subtab.quotes') }];
+      const subTabs = [
+        { id: SUBTAB_QUOTES, label: t('subtab.quotes') },
+        { id: SUBTAB_PICKS, label: t('subtab.picks') },
+      ];
 
       const pane = isEmpty
         ? h(EmptyState, { t, loading, onRetry: refresh })
@@ -647,9 +970,11 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
               )
             : null,
           isPage ? tabs : null,
-          head,
-          banner === null ? null : h('div', { className: 'fnd-banner' }, h(CandleGlyph, { size: 12 }), h('span', null, banner)),
-          view === SUBTAB_QUOTES ? pane : null,
+          view === SUBTAB_QUOTES ? head : null,
+          view === SUBTAB_QUOTES && banner !== null
+            ? h('div', { className: 'fnd-banner' }, h(CandleGlyph, { size: 12 }), h('span', null, banner))
+            : null,
+          view === SUBTAB_QUOTES ? pane : h(PicksView, { t, visible, variant: isPage ? 'page' : 'tab' }),
         ),
       );
     }
@@ -772,6 +1097,40 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
 .fnd-panel .fnd-card-meta { flex-direction: row; flex-wrap: wrap; gap: 12px; font-size: 11px; }
 .fnd-panel .fnd-row { padding: 11px 14px; }
 .fnd-chart.is-tall { height: 340px; }
+.fnd-picks { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 14px; min-height: 100%; }
+.fnd-picks-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.fnd-picks-head-text { min-width: 0; }
+.fnd-picks-title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--dsw-alias-label-primary); }
+.fnd-picks-sub { margin: 2px 0 0; font-size: 12px; line-height: 1.4; color: var(--dsw-alias-label-secondary); }
+.fnd-picks-rule { margin: 4px 0 0; font-size: 11px; line-height: 1.4; color: var(--dsw-alias-label-tertiary); }
+.fnd-picks-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11px; color: var(--dsw-alias-label-secondary); font-variant-numeric: tabular-nums; }
+.fnd-picks-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.fnd-pick { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0.5px solid var(--dsw-alias-border-l1); border-radius: 10px; background: var(--dsw-alias-bg-layer-1); }
+.fnd-pick-rank { width: 20px; flex: none; text-align: center; font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-tertiary); font-variant-numeric: tabular-nums; }
+.fnd-pick-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.fnd-pick-name-row { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.fnd-pick-name { font-size: 13px; font-weight: 600; color: var(--dsw-alias-label-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fnd-pick-code { font-size: 10px; color: var(--dsw-alias-label-tertiary); flex: none; }
+.fnd-pick-sector { font-size: 10px; color: var(--dsw-alias-label-secondary); padding: 1px 6px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2); flex: none; }
+.fnd-pick-metrics { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--dsw-alias-label-secondary); font-variant-numeric: tabular-nums; }
+.fnd-pick-score { width: 74px; flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.fnd-pick-score-value { font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-primary); font-variant-numeric: tabular-nums; }
+.fnd-pick-score-bar { width: 64px; height: 4px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2); overflow: hidden; }
+.fnd-pick-score-fill { display: block; height: 100%; border-radius: 999px; background: var(--dsw-alias-brand-primary); }
+.fnd-picks-note { margin: 0; font-size: 10px; line-height: 1.4; color: var(--dsw-alias-label-tertiary); }
+.fnd-picks-empty { padding: 26px 12px; text-align: center; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.fnd-picks-overlay { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(0, 0, 0, .28); }
+.fnd-picks-sheet { width: min(420px, 100%); max-height: 70vh; display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; border: 0.5px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); box-shadow: 0 18px 48px rgba(0, 0, 0, .25); }
+.fnd-picks-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fnd-picks-history { list-style: none; margin: 0; padding: 0; overflow: auto; display: flex; flex-direction: column; gap: 2px; }
+.fnd-pick-history-item { width: 100%; display: grid; grid-template-columns: 92px 1fr; gap: 2px 8px; padding: 8px 10px; text-align: left; border: 0; border-radius: 8px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.fnd-pick-history-item:hover { background: var(--dsw-alias-bg-layer-2); }
+.fnd-pick-history-item.is-active { background: var(--dsw-alias-bg-layer-2); }
+.fnd-pick-history-date { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fnd-pick-history-meta { font-size: 10px; color: var(--dsw-alias-label-secondary); font-variant-numeric: tabular-nums; }
+.fnd-pick-history-top { grid-column: 1 / -1; font-size: 11px; color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fnd-root .fnd-picks { padding: 8px 10px 12px; }
+.fnd-root .fnd-picks-rule { display: none; }
 `;
 
     /* ------------------------------------------------------------------ */
