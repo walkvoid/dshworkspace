@@ -7,7 +7,7 @@
  * 2. router semantics — fallback, stale reads, and honest failures — against
  *    fake providers, with no network.
  *
- * Run: node --test data/test/
+ * Run: node --test .dsh/data/test/
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

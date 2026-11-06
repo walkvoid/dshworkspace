@@ -5,9 +5,9 @@
  * （或恰逢盘中变动）。
  *
  * 用法：
- *   node scripts/verify-quotes.mjs
- *   node scripts/verify-quotes.mjs 601318 000001
- *   node scripts/verify-quotes.mjs 601318 --threshold 1
+ *   node .dsh/scripts/verify-quotes.mjs
+ *   node .dsh/scripts/verify-quotes.mjs 601318 000001
+ *   node .dsh/scripts/verify-quotes.mjs 601318 --threshold 1
  *
  * 退出码：0 全部在阈值内；1 存在超阈值偏差或取数失败。
  */

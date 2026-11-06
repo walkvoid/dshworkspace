@@ -30,10 +30,10 @@ COS 是可选的——没有 COS 时，视频文档与 claims 全部保存在本
 | `knowledge/compiled/active-claims.md` | 已审核的判例/边界规则（由 `knowledge/claims.jsonl` 生成） | 三因子落在阈值附近、行业特例、或需要历史判断时按需读 |
 | `knowledge/sync-state.json` | 上次同步到的最新视频日期 / 同步时间 | `/9c update` 判断增量起点时必读 |
 
-数据脚本在仓库根目录 `scripts/stock-data.mjs`。**仓库根按下列顺序解析**（装到用户级技能目录后相对路径会断，靠这个兜底）：
+数据脚本在 `.dsh/scripts/stock-data.mjs`。**按下列顺序解析**（`scripts/` 与 `skills/` 同级，仓库内和安装后是同一条相对路径）：
 
-1. 本目录下的 `repo.txt` —— `scripts/install-skills.mjs` 以 copy 模式安装时写入的绝对路径；
-2. 本目录的 `../../..` —— 技能位于仓库 `.dsh/skills/` 下时直接可用；
+1. 本目录的 `../../scripts/stock-data.mjs` —— 仓库内，以及 copy 模式安装（安装器把 `scripts/`、`data/` 铺到技能目录的上级）都命中；
+2. 本目录下 `repo.txt` 指向的仓库根 `.dsh/scripts/stock-data.mjs` —— link 模式与旧安装的兜底；
 3. 都不成立 → 告诉用户"找不到数据脚本"并请其确认仓库路径，**不要凭记忆编数字**。
 
 ## 二、执行流程（严格按顺序）
@@ -43,7 +43,7 @@ COS 是可选的——没有 COS 时，视频文档与 claims 全部保存在本
 从用户输入中取出股票名称或代码。输入含糊时（比如只给了行业），先用一句话确认，不要猜代码。
 
 ```bash
-node <仓库根>/scripts/stock-data.mjs all "中国平安"
+node <本目录>/../../scripts/stock-data.mjs all "中国平安"
 ```
 
 脚本返回 JSON：`subject` / `quote` / `fundamentals` / `annual` / `dividends` / `derived`。
@@ -122,11 +122,11 @@ node <仓库根>/scripts/stock-data.mjs all "中国平安"
 取数、归一化、缓存、失败回退与来源记录都在数据层完成，脚本只负责"取什么"和"怎么算"。
 
 ```bash
-node scripts/stock-data.mjs resolve 中国平安     # 名称 -> 候选代码
-node scripts/stock-data.mjs quote 601318         # 仅行情
-node scripts/stock-data.mjs all 中国平安          # 全量（默认）
-node scripts/stock-data.mjs all 601318 --periods 6
-node scripts/stock-data.mjs all hk:02318         # 港股：仅行情，财务类为空
+node .dsh/scripts/stock-data.mjs resolve 中国平安     # 名称 -> 候选代码
+node .dsh/scripts/stock-data.mjs quote 601318         # 仅行情
+node .dsh/scripts/stock-data.mjs all 中国平安          # 全量（默认）
+node .dsh/scripts/stock-data.mjs all 601318 --periods 6
+node .dsh/scripts/stock-data.mjs all hk:02318         # 港股：仅行情，财务类为空
 ```
 
 - 支持 **A 股（sh/sz/bj）与港股**；港股代码写 `hk:02318` 或 `02318`。
@@ -149,12 +149,12 @@ node scripts/stock-data.mjs all hk:02318         # 港股：仅行情，财务�
 
 ### 执行顺序
 
-1. 在仓库根运行增量更新：
+1. 运行增量更新（脚本在 `.dsh/scripts/`，仓库内与安装后的 `<技能根>/../scripts` 同构）：
 
    ```bash
-   node scripts/bili-sync.mjs update
+   node .dsh/scripts/bili-sync.mjs update
    # 第一次没有 state，默认从近 365 天开始；默认重叠 2 天
-   # 视频很多时先小批量：node scripts/bili-sync.mjs update --limit 10
+   # 视频很多时先小批量：node .dsh/scripts/bili-sync.mjs update --limit 10
    ```
 
    它会：
@@ -184,7 +184,7 @@ node scripts/stock-data.mjs all hk:02318         # 港股：仅行情，财务�
 
 4. 可选上传：配置了 `.env-prep/cos-mcp.env` 或 COS 环境变量时，`update` 会自动上传；
    想强制只存本地就加 `--no-cos`；也可以单独跑
-   `node scripts/bili-sync.mjs upload --prefix 9c/docs`。
+   `node .dsh/scripts/bili-sync.mjs upload --prefix 9c/docs`。
 
 ### 失败处理
 
@@ -198,12 +198,12 @@ node scripts/stock-data.mjs all hk:02318         # 港股：仅行情，财务�
 原始视频转写、抽取 prompt、候选 claim 都不进 runtime；runtime 只读 `knowledge/compiled/active-claims.md`。
 
 ```bash
-# 在仓库根：视频 → 文档 → COS
-node scripts/bili-sync.mjs list --days 365
-node scripts/bili-sync.mjs subtitles --limit 20
-node scripts/bili-sync.mjs docs   # 无 LLM 时只生成 prompt
-node scripts/bili-sync.mjs upload --prefix 9c/docs
-node scripts/bili-sync.mjs status
+# 视频 → 文档 → COS（在仓库根，或安装后的技能根上级）
+node .dsh/scripts/bili-sync.mjs list --days 365
+node .dsh/scripts/bili-sync.mjs subtitles --limit 20
+node .dsh/scripts/bili-sync.mjs docs   # 无 LLM 时只生成 prompt
+node .dsh/scripts/bili-sync.mjs upload --prefix 9c/docs
+node .dsh/scripts/bili-sync.mjs status
 
 # 在 .dsh/skills/9c：claim 校验 / 合并 / 编译
 cd .dsh/skills/9c

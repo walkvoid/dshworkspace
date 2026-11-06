@@ -12,9 +12,9 @@
  *   COS_REGION / COS_BUCKET / COS_SECRET_ID / COS_SECRET_KEY / COS_DATASET_NAME
  *
  * 用法：
- *   node scripts/cos-mcp-smoke.mjs
- *   node scripts/cos-mcp-smoke.mjs --no-bucket      # 只验证 MCP 能启动、工具能列出来
- *   node scripts/cos-mcp-smoke.mjs --json
+ *   node .dsh/scripts/cos-mcp-smoke.mjs
+ *   node .dsh/scripts/cos-mcp-smoke.mjs --no-bucket      # 只验证 MCP 能启动、工具能列出来
+ *   node .dsh/scripts/cos-mcp-smoke.mjs --json
  */
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -28,7 +28,7 @@ const flag = (name, fallback = '') => {
 };
 
 if (has('help')) {
-  console.log(`用法：node scripts/cos-mcp-smoke.mjs [--no-bucket] [--write] [--json] [--version 1.0.15] [--timeout 120] [--env-file .env-prep/cos-mcp.env]
+  console.log(`用法：node .dsh/scripts/cos-mcp-smoke.mjs [--no-bucket] [--write] [--json] [--version 1.0.15] [--timeout 120] [--env-file .env-prep/cos-mcp.env]
 凭据环境变量：COS_REGION / COS_BUCKET / COS_SECRET_ID / COS_SECRET_KEY / COS_DATASET_NAME
 
   --prefix <path>       只列该前缀下的对象

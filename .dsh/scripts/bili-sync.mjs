@@ -2,11 +2,11 @@
 /**
  * 9c 视频同步：B 站投稿列表 → 字幕/转写 → 文档 prompt → COS 上传。
  *
- *   node scripts/bili-sync.mjs list [--days 365]
- *   node scripts/bili-sync.mjs subtitles [--limit 20]
- *   node scripts/bili-sync.mjs docs [--api-base ... --api-key ... --model ...]
- *   node scripts/bili-sync.mjs upload [--prefix 9c/docs]
- *   node scripts/bili-sync.mjs all
+ *   node .dsh/scripts/bili-sync.mjs list [--days 365]
+ *   node .dsh/scripts/bili-sync.mjs subtitles [--limit 20]
+ *   node .dsh/scripts/bili-sync.mjs docs [--api-base ... --api-key ... --model ...]
+ *   node .dsh/scripts/bili-sync.mjs upload [--prefix 9c/docs]
+ *   node .dsh/scripts/bili-sync.mjs all
  *
  * 只读写 .dsh/skills/9c/knowledge/；不把转写/密钥写进仓库。
  * B 站接口需要外网；不可达时用 --list-file 导入另一台机器抓好的列表。
@@ -18,8 +18,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..');
-const SKILL_ROOT = path.join(REPO_ROOT, '.dsh', 'skills', '9c');
+// 仓库内是 <repo>/.dsh/scripts，copy 安装后是 <技能根>/../scripts，两者都只差一级，按 DSH 根推即可。
+const DSH_ROOT = path.resolve(HERE, '..');
+const SKILL_ROOT = path.join(DSH_ROOT, 'skills', '9c');
 const KNOWLEDGE = path.join(SKILL_ROOT, 'knowledge');
 const SOURCES_FILE = path.join(KNOWLEDGE, 'sources.jsonl');
 const STATE_FILE = path.join(KNOWLEDGE, 'sync-state.json');
@@ -52,7 +53,7 @@ const WBI_TAB = [
 const md5 = (value) => crypto.createHash('md5').update(value).digest('hex');
 
 function usage() {
-  console.log(`用法：node scripts/bili-sync.mjs <list|subtitles|docs|upload|update|status|all> [选项]
+  console.log(`用法：node .dsh/scripts/bili-sync.mjs <list|subtitles|docs|upload|update|status|all> [选项]
 
   list       拉取 UP 主近 N 天投稿，写 knowledge/sources.jsonl
     --days 365 / --max-pages 50 / --since YYYY-MM-DD
@@ -447,7 +448,7 @@ async function docs() {
 function upload(options = {}) {
   const prefix = flag('prefix', '9c/docs');
   const envFile = flag('env-file', '.env-prep/cos-mcp.env');
-  const envPath = path.isAbsolute(envFile) ? envFile : path.join(REPO_ROOT, envFile);
+  const envPath = path.isAbsolute(envFile) ? envFile : path.resolve(process.cwd(), envFile);
   const envConfigured =
     fs.existsSync(envPath) ||
     (process.env.COS_REGION && process.env.COS_BUCKET && process.env.COS_SECRET_ID && process.env.COS_SECRET_KEY);
@@ -458,8 +459,8 @@ function upload(options = {}) {
   }
   const result = spawnSync(
     process.execPath,
-    [path.join(REPO_ROOT, 'scripts', 'cos-upload.mjs'), '--dir', DOCS_DIR, '--prefix', prefix, '--env-file', envFile, '--json'],
-    { cwd: REPO_ROOT, encoding: 'utf8', timeout: 300_000 },
+    [path.join(HERE, 'cos-upload.mjs'), '--dir', DOCS_DIR, '--prefix', prefix, '--env-file', envFile, '--json'],
+    { cwd: process.cwd(), encoding: 'utf8', timeout: 300_000 },
   );
   console.log((result.stdout ?? '').trim());
   if (result.status !== 0) {

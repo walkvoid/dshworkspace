@@ -35,7 +35,7 @@ function candidateDirs() {
   const home = os.homedir();
   return [
     process.env.IFIND_SKILL_DIR,
-    path.resolve(fileURLToPath(new URL('../../.dsh/skills/ifind-finance-data', import.meta.url))),
+    path.resolve(fileURLToPath(new URL('../../skills/ifind-finance-data', import.meta.url))),
     path.join(home, '.dsh', 'skills', 'ifind-finance-data'),
     path.join(home, '.agents', 'skills', 'ifind-finance-data'),
     path.join(home, '.config', 'agents', 'skills', 'ifind-finance-data'),

@@ -6,10 +6,10 @@
  * 来源与新近度全部由 data/index.mjs 负责，这里只做"取什么"和"怎么算"。
  *
  * 用法：
- *   node scripts/stock-data.mjs resolve 中国平安
- *   node scripts/stock-data.mjs quote 601318
- *   node scripts/stock-data.mjs all 中国平安
- *   node scripts/stock-data.mjs all hk:02318        # 港股：仅行情，财务源未接入
+ *   node .dsh/scripts/stock-data.mjs resolve 中国平安
+ *   node .dsh/scripts/stock-data.mjs quote 601318
+ *   node .dsh/scripts/stock-data.mjs all 中国平安
+ *   node .dsh/scripts/stock-data.mjs all hk:02318        # 港股：仅行情，财务源未接入
  *
  * 输出：单个 JSON 到 stdout。取不到的字段一律 null，不做猜测。
  */
@@ -367,10 +367,10 @@ function printHelp() {
     [
       'stock-data.mjs — 人格化个股分析的数据接地（A 股 / 港股行情）',
       '',
-      '  node scripts/stock-data.mjs resolve <名称>     名称 -> 候选代码',
-      '  node scripts/stock-data.mjs quote <代码>       仅快照行情',
-      '  node scripts/stock-data.mjs all <名称|代码>    行情 + 财务 + 分红 + 派生指标（默认）',
-      '  node scripts/stock-data.mjs providers          列出已注册的数据源与能力',
+      '  node .dsh/scripts/stock-data.mjs resolve <名称>     名称 -> 候选代码',
+      '  node .dsh/scripts/stock-data.mjs quote <代码>       仅快照行情',
+      '  node .dsh/scripts/stock-data.mjs all <名称|代码>    行情 + 财务 + 分红 + 派生指标（默认）',
+      '  node .dsh/scripts/stock-data.mjs providers          列出已注册的数据源与能力',
       '',
       '选项：--periods <n>  取最近 n 期财报，默认 4（最多 8）',
       '',

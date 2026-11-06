@@ -11,8 +11,8 @@
  * data layer (`../../data/index.mjs`); this file only adapts the unified result
  * to the response shape the client already understands.
  */
-import { get, getMany } from '../data/index.mjs';
-import { parseInstrument } from '../data/instruments.mjs';
+import { get, getMany } from '../../data/index.mjs';
+import { parseInstrument } from '../../data/instruments.mjs';
 
 /** Cordis function-plugin name. */
 export const name = 'financial-dashboard';
@@ -33,7 +33,7 @@ const DAILY_BARS = 120;
  * Re-export the snapshot parser so existing tooling keeps one import site.
  * @deprecated import from `data/providers/tencent.mjs` instead.
  */
-export { parseQuoteText as parseSnapshot } from '../data/providers/tencent.mjs';
+export { parseQuoteText as parseSnapshot } from '../../data/providers/tencent.mjs';
 
 /**
  * Map a normalized quote onto the field names the client reads.

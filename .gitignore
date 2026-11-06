@@ -26,4 +26,7 @@ Thumbs.db
 
 # Cloned project workspaces (repos + their .env-prep) never belong to this repo.
 /project/
-/.idea/
+
+# IDE state, at any depth: the dashboard is its own package and may be opened separately.
+.idea/
+*.iml

@@ -5,4 +5,4 @@ client.js -text
 *.tgz binary
 # Upstream fixtures are byte-exact: the Tencent feeds are GBK, and the tests
 # decode them as such, so line-ending conversion would corrupt them.
-data/test/fixtures/*.txt binary
+.dsh/data/test/fixtures/*.txt binary

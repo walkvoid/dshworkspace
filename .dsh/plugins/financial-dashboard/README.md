@@ -3,7 +3,7 @@
 DSH 单 bundle 插件：在右侧栏新增「金融看板」标签页类型，并在左侧栏提供一个同名的整页面板；
 页面标题下有页内子标签「行情」，展示指数指标卡、自选股列表与近 120 个交易日 K 线，每 15 秒自动刷新。
 
-仓库：<https://github.com/walkvoid/dshworkspace>，本插件位于仓库的 `financial-dashboard/` 目录
+仓库：<https://github.com/walkvoid/dshworkspace>，本插件位于仓库的 `.dsh/plugins/financial-dashboard/` 目录
 （该目录即 bundle 根，包含 `package.json`）。
 
 ## 在另一台电脑安装
@@ -17,7 +17,7 @@ git clone https://github.com/walkvoid/dshworkspace.git D:\dshworkspace
 然后在 DSH 里安装这个本地 bundle（两种方式任选）：
 
 1. 让 DSH 里的 Agent 执行：`plugin_manager` → `install_bundle`，`target` 指到
-   **`D:\dshworkspace\financial-dashboard`**（即本目录，包含 `package.json` 的那层）；
+   **`D:\dshworkspace\.dsh\plugins\financial-dashboard`**（即本目录，包含 `package.json` 的那层）；
 2. 或使用插件管理界面的「添加插件」，选择本目录安装。
 
 安装返回 `application: applied` 后刷新 Web GUI。左侧栏会出现「金融看板」，右侧栏开始页会出现「行情」卡片。
@@ -45,8 +45,8 @@ git clone https://github.com/walkvoid/dshworkspace.git D:\dshworkspace
 | `locale/*.json` | 插件管理中的显示标题与描述（`meta.title` / `meta.description`） |
 | `icon.svg` | 插件图标 |
 
-行情抓取、归一化、缓存与过期兜底都在仓库根目录的 [`data/`](../README.md#4-数据层统一取数入口) 数据层里；
-本插件通过 `../data/index.mjs` 引用它（安装时是指向仓库的 junction，因此同级目录必须存在）。
+行情抓取、归一化、缓存与过期兜底都在仓库 `.dsh/data/` 的[数据层](../../../README.md#4-数据层统一取数入口)里；
+本插件通过 `../../data/index.mjs` 引用它（安装时是指向本目录的 junction，因此 `.dsh/data/` 必须与它一起在位）。
 
 ## Host 路由
 
@@ -74,7 +74,7 @@ GET /financial-dashboard/quotes?codes=sh600519,sz000001[&daily=sh600519]
 
 ## 开发与构建
 
-需要 Node.js 18+（使用全局 `fetch`）。在本目录（`financial-dashboard/`）执行：
+需要 Node.js 18+（使用全局 `fetch`）。在本目录（`.dsh/plugins/financial-dashboard/`）执行：
 
 ```powershell
 npm run build    # 等价于 node scripts/build.mjs
