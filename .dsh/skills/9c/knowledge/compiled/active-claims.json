@@ -1,7 +1,83 @@
 {
-  "generatedAt": "2026-11-04T07:19:08.803Z",
-  "count": 14,
+  "generatedAt": "2026-11-06T05:01:15.363Z",
+  "count": 58,
   "claims": [
+    {
+      "id": "BV16fH76GEoD-005",
+      "type": "caveat",
+      "dimension": "risk",
+      "statement": "负债结构或底层资产看不清楚的标的（银行、融资租赁）一律不买，即使股息可持续且有国家信用背书。",
+      "as_of": "2026-10-04",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV16fH76GEoD",
+        "t": 5414,
+        "quote": "我就坚决不买"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对；银行/融资租赁负债表看不懂即放弃"
+    },
+    {
+      "id": "BV1M4Yi6TE4F-006",
+      "type": "caveat",
+      "dimension": "risk",
+      "statement": "不做空：做空亏损没有边界，做多最多把成本亏掉。",
+      "as_of": "2026-09-13",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1M4Yi6TE4F",
+        "t": 3879,
+        "quote": "因为做空它的亏损是没有边界的"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1W5Yv6xEEg-004",
+      "type": "caveat",
+      "dimension": "risk",
+      "statement": "若美债长端利率上行同时本币汇率反而贬值，应判定为被动加息（信用与赤字驱动），此时“加息推升本币”的规律不成立，不能按主动加息去推演汇率与资金流向。",
+      "as_of": "2026-09-13",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1W5Yv6xEEg",
+        "t": 1062,
+        "quote": "还汇率在不断的贬值的啊"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1udK66UESx-002",
+      "type": "rule",
+      "dimension": "risk",
+      "statement": "做抗周期时股票仓位原则上不超过 80%；留出的现金按「看跌期权」看待，不按收息资产看待。",
+      "as_of": "2026-07-19",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1udK66UESx",
+        "t": 2302,
+        "quote": "我原则上建议这个仓位啊最好不要超过80%"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
     {
       "id": "fw-001",
       "type": "rule",
@@ -51,6 +127,177 @@
       "notes": "来自现有 framework.md 的结构化整理，不是视频原话。"
     },
     {
+      "id": "BV1XzGE6kE98-002",
+      "type": "rule",
+      "dimension": "risk",
+      "statement": "股息率相同也优先选净现金、不选高有息负债：判据是加息 1% 时，两三百亿有息负债会抹掉 5~10 亿净利并直接削减股息，而净现金企业反而因存款利息受益。",
+      "as_of": "2026-05-24",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1XzGE6kE98",
+        "t": 1039,
+        "quote": "会迅速抹掉五个亿"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1XzGE6kE98-005",
+      "type": "rule",
+      "dimension": "risk",
+      "statement": "红利低波 ETF 不能替代自建收息组合：其股息率与煤价油价等周期因子捆绑、风险溢价不对称；应自建 15 只以上、税后股息 4% 以上、底层现金流为通行费/电费/软饮料/一线租金的非周期标的。",
+      "as_of": "2026-05-24",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1XzGE6kE98",
+        "t": 5105,
+        "quote": "红利低波他的股息率啊是跟周期是有捆绑的"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1WxQ6BEE53-002",
+      "type": "rule",
+      "dimension": "risk",
+      "statement": "融资租赁这类大金融股除非股息极高、PB 极低，否则不买：坏账率往往写不清楚、雷很大，条件不够就不进体系。",
+      "as_of": "2026-03-24",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1WxQ6BEE53",
+        "t": 479,
+        "quote": "除非是我说的这种极度高的股息"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1WxQ6BEE53-004",
+      "type": "caveat",
+      "dimension": "risk",
+      "statement": "看融资租赁公司的不良率与拨备率要打折：未暴露的不良不会报出来，而且母公司注资扩股本身就会摊薄不良率，必须把摊薄和经营改善拆开算。",
+      "as_of": "2026-03-24",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1WxQ6BEE53",
+        "t": 552,
+        "quote": "当然他这个数字不一定真实"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1Tc62B6EuX-005",
+      "type": "caveat",
+      "dimension": "risk",
+      "statement": "公司被立案、尚未出具行政处罚决定书之前不要进场；若涉及 3 年以上财务造假，必须等行政处罚决定书出来再考虑。",
+      "as_of": "2026-01-31",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1Tc62B6EuX",
+        "t": 7009,
+        "quote": "我建议你等行政处罚出来"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1Xx6GBsEp2-002",
+      "type": "rule",
+      "dimension": "risk",
+      "statement": "看物业股要尤其重视控股股东结构：优先选控股股东为国企的地产系物业（如中海、保利），回避民企地产母公司控股的，因为后者在地产出险时会用物业账上现金接盘大股东资产。",
+      "as_of": "2026-01-27",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1Xx6GBsEp2",
+        "t": 301,
+        "quote": "我认为国企是非常重要的"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1W5Yv6xEEg-001",
+      "type": "rule",
+      "dimension": "business",
+      "statement": "拆 PPI 要先分上下游：若只有上游原材料（有色、煤炭、石油、化学原料、化学纤维）同比涨近十个点以上、下游成品（汽车、食品、服装）无涨幅或下跌，则判定为上游驱动、下游被迫涨价，毛利率由下游向上游转移。",
+      "as_of": "2026-09-13",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1W5Yv6xEEg",
+        "t": 733,
+        "quote": "下游本身的毛利率额我认为是降低了"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1XmhK6pE31-001",
+      "type": "rule",
+      "dimension": "business",
+      "statement": "读财报要先看单季环比（Q1 与 Q2 之间），H1 合并增速看着还行不代表没有问题，断档只有拆到单季才看得出来。",
+      "as_of": "2026-08-24",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1XmhK6pE31",
+        "t": 8,
+        "quote": "主要看环比嘛"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1udK66UESx-004",
+      "type": "rule",
+      "dimension": "business",
+      "statement": "央企加垄断只是好属性，必须再叠极低估值与无负债才买；高负债央企（如中国建筑）是这条路上失败的典型。",
+      "as_of": "2026-07-19",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1udK66UESx",
+        "t": 2198,
+        "quote": "你只要买的是无负债的企业"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
       "id": "fw-007",
       "type": "rule",
       "dimension": "business",
@@ -73,6 +320,120 @@
         "section": "1. 因子一：商业模式"
       },
       "notes": "来自现有 framework.md 的结构化整理，不是视频原话。"
+    },
+    {
+      "id": "BV1ziLn6AEgL-004",
+      "type": "caveat",
+      "dimension": "business",
+      "statement": "中国下游产能过剩没有提价权：能源涨 20~30 个点而 PPI 只涨 2 个多点、汽车与金属制品还在降价，因此不能按美国全行业提价的口径外推中国工业品价格与下游利润。",
+      "as_of": "2026-05-17",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1ziLn6AEgL",
+        "t": 883,
+        "quote": "因为我们其他行业它没有提价权好"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1WxQ6BEE53-001",
+      "type": "rule",
+      "dimension": "business",
+      "statement": "选融资租赁公司的第一判据是控股股东是否强到能持续给它输血：股东不够强，租赁资产逐年贬值、边际扩张停滞，利润会越来越少，也维持不了高派现。",
+      "as_of": "2026-03-24",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1WxQ6BEE53",
+        "t": 67,
+        "quote": "需要一个强有力的控股股东"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1wjwuznEPS-006",
+      "type": "rule",
+      "dimension": "business",
+      "statement": "特许经营/垄断型生意必须叠加央企或国企控股这一条件才买，民营特许经营迟早被国家限价整顿。",
+      "as_of": "2026-03-15",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1wjwuznEPS",
+        "t": 6829,
+        "quote": "尤其是这个特许经营一定要结合国家背景啊"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1XAN3zmEhb-002",
+      "type": "rule",
+      "dimension": "business",
+      "statement": "当 PMI 原材料购进价格明显高于出厂价格、且企业提价幅度低于原材料涨幅时，PPI 环比回升属于成本推动而非需求驱动，不能解读为利好。",
+      "as_of": "2026-03-08",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1XAN3zmEhb",
+        "t": 407,
+        "quote": "因为他的原材料涨的更猛啊对吧"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1Xx6GBsEp2-001",
+      "type": "rule",
+      "dimension": "business",
+      "statement": "判断公司质地要看它在行业最困难时期能否保住 90% 以上的业务规模、利润相对稳定甚至扩张，而不是看行业景气时的增速。",
+      "as_of": "2026-01-27",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1Xx6GBsEp2",
+        "t": 634,
+        "quote": "能够保持其业务90%以上的规模"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1uF7s6wEGU-002",
+      "type": "definition",
+      "dimension": "cashflow",
+      "statement": "T0级烟蒂股的唯一标准是现金及等价物减去100%全部负债后仍远大于市值（厂房、应收、存货、在建工程全部归零）。",
+      "as_of": "2026-06-27",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1uF7s6wEGU",
+        "t": 4139,
+        "quote": "我只看现金减去了所有的债务"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
     },
     {
       "id": "fw-009",
@@ -120,6 +481,253 @@
         "section": "3. 因子三：真实可支配现金变动"
       },
       "notes": "来自现有 framework.md 的结构化整理，不是视频原话。"
+    },
+    {
+      "id": "BV1XzGE6kE98-003",
+      "type": "rule",
+      "dimension": "cashflow",
+      "statement": "买点的第一顺位是绝对股息率能否覆盖被套的时间成本：以 2.7% 股息率买入垄断型公司被本人判定为错，若被套两年扣完税只有 5% 就不合格，应等到四五个点以上股息。",
+      "as_of": "2026-05-24",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1XzGE6kE98",
+        "t": 1363,
+        "quote": "所以我当时在这个2.7%的股息率啊"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV19GoFBYEZG-005",
+      "type": "caveat",
+      "dimension": "cashflow",
+      "statement": "用四大行这类银行股做收息资产时，不能用「银行不会倒」替代股息稳定性判断；坏账集中计提会让可分配股息大幅下降，股息率可以从八个点掉到两个点。",
+      "as_of": "2026-04-19",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV19GoFBYEZG",
+        "t": 2416,
+        "quote": "但是你要知道四大行不倒不等于它的股息稳定"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对；银行/融资租赁负债表看不懂即放弃"
+    },
+    {
+      "id": "BV1Y6wozuEYc-001",
+      "type": "rule",
+      "dimension": "cashflow",
+      "statement": "判断纯收租型 REIT 的真实盈利能力要把地产减值、折旧、汇兑损益这些不构成现金流出的科目加回：汇贤 22 亿租金被 16 亿非现金计提做成账面亏损，加回后约 11 亿。",
+      "as_of": "2026-03-17",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1Y6wozuEYc",
+        "t": 627,
+        "quote": "给你减值了16个亿是吧"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1Y6wozuEYc-002",
+      "type": "rule",
+      "dimension": "cashflow",
+      "statement": "当 REIT 派息远低于最差分部利润、同时总债务在大幅下降时，应判定为偿还本金导致的低派息，而不是盈利能力差。",
+      "as_of": "2026-03-17",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1Y6wozuEYc",
+        "t": 476,
+        "quote": "然后你说你给股东分就分了2800万"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1wjwuznEPS-002",
+      "type": "rule",
+      "dimension": "cashflow",
+      "statement": "只有当流动资产达到流动负债1.5倍以上、经营性资产与负债大致可抵消时，净现金才能从市值中扣除当作资产垫；否则现金需参与周转，不能计入。",
+      "as_of": "2026-03-15",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1wjwuznEPS",
+        "t": 2436,
+        "quote": "可以达到流动负债的1.5倍以上"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1wjwuznEPS-003",
+      "type": "definition",
+      "dimension": "cashflow",
+      "statement": "可支配现金流按「经营现金流－全部资本开支（不区分维持性与购买性）－租赁本金」计算，再按少数股东权益比例折算（中国食品乘0.65）。",
+      "as_of": "2026-03-15",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1wjwuznEPS",
+        "t": 5265,
+        "quote": "然后减去了这个这个所有的资本开支"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1Tc62B6EuX-002",
+      "type": "rule",
+      "dimension": "cashflow",
+      "statement": "把净现金（现金减有息负债）从市值里剔除后，剩余市值对应的盈利能力要占 10% 以上（即剔除净现金后 10 倍 PE 以内），再叠加两年业绩可看懂与分散，回撤概率才极小。",
+      "as_of": "2026-01-31",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1Tc62B6EuX",
+        "t": 5729,
+        "quote": "占剩余市值的10%以上"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1Xx6GBsEp2-003",
+      "type": "rule",
+      "dimension": "cashflow",
+      "statement": "检验分红承诺是否可持续，要用账上现金除以年派息额算能撑几年，并检查当年利润能否覆盖派息；洋河按 70 亿/年只能撑 3 年、利润只覆盖约 1/3，所以这种派息承诺无法长期维持。",
+      "as_of": "2026-01-27",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1Xx6GBsEp2",
+        "t": 879,
+        "quote": "那么他的现金储备除以了分红额的"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1udK66UESx-001",
+      "type": "rule",
+      "dimension": "valuation",
+      "statement": "买点要三个条件同时满足：估值十倍以内（最好个位数）、股息率 5 个点以上、所属行业仍在以 10% 左右增长；缺一条就不算「破产价格买到有增长」。",
+      "as_of": "2026-07-19",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1udK66UESx",
+        "t": 1143,
+        "quote": "如果说他能给你五个点以上股息"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1udK66UESx-005",
+      "type": "rule",
+      "dimension": "valuation",
+      "statement": "内地 REITs 只有收益权没有所有权，公告股息率必须先扣掉 100%/剩余收费年限（高速 20 年约扣 5 个点、保障房 60 年约扣 1.5 个点）才是真实收益率，不能直接跟股票股息率比。",
+      "as_of": "2026-07-19",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1udK66UESx",
+        "t": 8486,
+        "quote": "扣完之后才是你真实的股息率"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1YjNS6VEHX-001",
+      "type": "rule",
+      "dimension": "valuation",
+      "statement": "美元加息或加息预期上升会抬升折现率，现金流后置的成长股与科技股承受的估值压制大于现金流前置的公司。",
+      "as_of": "2026-07-13",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1YjNS6VEHX",
+        "t": 180,
+        "quote": "它对于现金流后置的企业会造成比较大的压迫"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1uF7s6wEGU-001",
+      "type": "rule",
+      "dimension": "valuation",
+      "statement": "安全垫用EV为负来量：市值＋刚性负债－类现金＜0，固定资产、应收账款、存货一律按零计，达不到这个程度就不算有安全边际。",
+      "as_of": "2026-06-27",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1uF7s6wEGU",
+        "t": 1204,
+        "quote": "他是这个小于零的对吧"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1uF7s6wEGU-003",
+      "type": "rule",
+      "dimension": "valuation",
+      "statement": "估值修复仓在8~9倍市盈率买入、涨到15倍就卖出，不做长期持有，也不指望真收到股息。",
+      "as_of": "2026-06-27",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1uF7s6wEGU",
+        "t": 1776,
+        "quote": "市盈率涨到15倍我就走了是吧"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
     },
     {
       "id": "fw-002",
@@ -215,6 +823,120 @@
         "section": "2. 因子二：穿透回报率"
       },
       "notes": "来自现有 framework.md 的结构化整理，不是视频原话。"
+    },
+    {
+      "id": "BV1XzGE6kE98-001",
+      "type": "rule",
+      "dimension": "valuation",
+      "statement": "用账面净现金抵扣市值时必须打折：不能再用 0.8~0.9 的系数全额抵扣，估值重心应改为「不靠现金储备能赚多少、能派多少」，因为二级市场决定不了现金储备的变现能力。",
+      "as_of": "2026-05-24",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1XzGE6kE98",
+        "t": 1193,
+        "quote": "我们在估值的时候要打个折扣"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1XzGE6kE98-006",
+      "type": "caveat",
+      "dimension": "valuation",
+      "statement": "保险股的 2~5 倍市盈率不能当作便宜：利润含浮存金在债牛叠加股牛中的投资收益，在高基数下下一期必然衰退，市盈率会自然升到 8 倍甚至 10 倍。",
+      "as_of": "2026-05-24",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1XzGE6kE98",
+        "t": 3631,
+        "quote": "他们的市盈率会逐渐的涨到八倍"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1wjwuznEPS-004",
+      "type": "rule",
+      "dimension": "valuation",
+      "statement": "地产股在净负债尚未清零阶段只看资产负债表（净负债消除速度、地产库存转现金速度），不看PE；PB升到0.7以上才切回看利润表。",
+      "as_of": "2026-03-15",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1wjwuznEPS",
+        "t": 3287,
+        "quote": "地产这个阶段是看资产负债表"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1Tc62B6EuX-003",
+      "type": "definition",
+      "dimension": "valuation",
+      "statement": "回购只有「注销型回购」计入股东回报（等价于分红再投资）；股权激励型回购是拿账上现金换股票发给员工，与股东回报无关，不得计入回报率分子。",
+      "as_of": "2026-01-31",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1Tc62B6EuX",
+        "t": 5742,
+        "quote": "因为注销型回购就等于你分红再投资"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1Xx6GBsEp2-004",
+      "type": "rule",
+      "dimension": "valuation",
+      "statement": "对净现金型公司定买点，先把净现金从市值里扣掉，再按剩余利润给 10 倍；五粮液 90 块约 12~13 倍只是插眼，80 块才是 10 倍买点。",
+      "as_of": "2026-01-27",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1Xx6GBsEp2",
+        "t": 958,
+        "quote": "那么实际上你应该在80左右去买好"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1Xx6GBsEp2-006",
+      "type": "caveat",
+      "dimension": "valuation",
+      "statement": "大额一次性计提会把当年利润打到极低基数（如蒙牛计提贝拉米），使次年表观利润增速虚高到一两百%；机构明知是假的仍会看表面增幅，不能当作真实改善。",
+      "as_of": "2026-01-27",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1Xx6GBsEp2",
+        "t": 1137,
+        "quote": "你至少表面上看看是增速一两百%对吧"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
     },
     {
       "id": "fw-003",
@@ -313,6 +1035,82 @@
       "notes": "来自现有 framework.md 的结构化整理，不是视频原话。"
     },
     {
+      "id": "BV1XzGE6kE98-004",
+      "type": "rule",
+      "dimension": "portfolio",
+      "statement": "息差套利只允许同时满足三条：杠杆率不超过 40%（他一般 20~30%）、按 130~140% 本金计算的股息能在 3 年内填掉杠杆、且加杠杆后要本金跌 50% 才触发风控。",
+      "as_of": "2026-05-24",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1XzGE6kE98",
+        "t": 5331,
+        "quote": "第一个我的杠杆率不能超过40%"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1WxQ6BEE53-005",
+      "type": "rule",
+      "dimension": "portfolio",
+      "statement": "选烟蒂股优先选实控人是地方国资委、体量大到看不上小公司账上几个亿的国企：民企在离岸没人监管，容易被大股东扒层皮。",
+      "as_of": "2026-03-24",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1WxQ6BEE53",
+        "t": 873,
+        "quote": "这种体量是看不上你这家企业账上了几个亿的"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1wjwuznEPS-005",
+      "type": "caveat",
+      "dimension": "portfolio",
+      "statement": "不配置自由现金流类ETF：其编制口径不做EV/资产垫调整、不剔除强周期股，会在周期股股息率最高（股价顶部）时买入、自由现金流变少（周期底部）时卖出。",
+      "as_of": "2026-03-15",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1wjwuznEPS",
+        "t": 6084,
+        "quote": "他这个自由限流的指数甚至没有去算EV啊"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1Tc62B6EuX-006",
+      "type": "rule",
+      "dimension": "portfolio",
+      "statement": "不做指数择时、常年满仓，改以调节组合弹性控制回撤：点位高时换入波动率更窄的标的，使上涨赚多、下跌亏少。",
+      "as_of": "2026-01-31",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1Tc62B6EuX",
+        "t": 4973,
+        "quote": "我控制我控制弹性就可以了"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
       "id": "fw-011",
       "type": "rule",
       "dimension": "edge",
@@ -336,6 +1134,44 @@
         "section": "6. 虚高估值机会"
       },
       "notes": "来自现有 framework.md 的结构化整理，不是视频原话。"
+    },
+    {
+      "id": "BV1Y6wozuEYc-005",
+      "type": "rule",
+      "dimension": "edge",
+      "statement": "判断 REIT 是否在玩财技看三项：管理费是否上升、是否发新份额、是否有摊销；三项都没恶化（汇贤管理费反降 500 万）就不算老千，只是把派息往后拖。",
+      "as_of": "2026-03-17",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1Y6wozuEYc",
+        "t": 1106,
+        "quote": "因为管理人费用还降低了500万哦"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
+    },
+    {
+      "id": "BV1XAN3zmEhb-006",
+      "type": "caveat",
+      "dimension": "edge",
+      "statement": "对外部冲击（地缘、油价）应做情境假设并以跟随应对为主，不做方向性预判，因为普通投资者预判往往容易出错。",
+      "as_of": "2026-03-08",
+      "status": "active",
+      "confidence": "high",
+      "reviewed": true,
+      "evidence": {
+        "kind": "video",
+        "bvid": "BV1XAN3zmEhb",
+        "t": 202,
+        "quote": "做预判的话呢往往容易出错"
+      },
+      "reviewed_at": "2026-11-06",
+      "reviewed_by": "quote-check@9c",
+      "notes": "2026-11-06 激活：quote 已在 knowledge/transcripts 中逐字核对，属规则级判断"
     }
   ]
 }

@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-05T15:45:11.251Z",
+  "generatedAt": "2026-11-06T05:01:15.363Z",
   "claims": 461,
-  "active": 14,
+  "active": 58,
   "byStatus": {
-    "active": 14,
-    "candidate": 447
+    "active": 58,
+    "candidate": 403
   },
   "byType": {
     "rule": 337,
