@@ -32,7 +32,8 @@ https://raw.githubusercontent.com/walkvoid/dshworkspace/main/SKILL_INSTALL_GUIDE
 
 | 用户可能怎么说 | 技能目录名 | 一句话作用 |
 | --- | --- | --- |
-| 史诗级韭菜、龟龟法、龟龟投资法、9c、`/9c` | `9c` | 按「史诗级韭菜」的龟龟投资法评估一只 A 股 |
+| 史诗级韭菜、龟龟法、龟龟投资法、9c、`/9c` | `9c` | 按「史诗级韭菜」的龟龟投资法评估一只 A 股（数据来自 `fin-data`） |
+| A 股日线、本地行情、`/fin-data` | `fin-data` | A 股日线数据 + 统一取数入口（行情/财报/分红/汇率）；9c 与看板都依赖它 |
 | Java 环境准备、环境准备、`/环境准备`、`/java-env-prep` | `java-env-prep` | 把一份资料变成能开工的 Java 开发环境（见第 2.5 步） |
 | 项目导览、代码地图、导览、`/java-project-tour`、`/代码地图` | `java-project-tour` | 把多仓库 Java 项目扫成 `.knowledge/` 索引，回答“功能在哪、改哪要动哪些文件” |
 | 需求分析、需求评审、`/java-requirement-analysis`、`/需求分析` | `java-requirement-analysis` | 把需求文档拆成改动大类 / 子需求 / 代码改动点 / 新增类 / 估时 / 澄清问题 |
@@ -42,18 +43,20 @@ https://raw.githubusercontent.com/walkvoid/dshworkspace/main/SKILL_INSTALL_GUIDE
 > 阅读 https://raw.githubusercontent.com/walkvoid/dshworkspace/main/SKILL_INSTALL_GUIDE.md，安装史诗级韭菜
 
 这种情况下**只装史诗级韭菜（`9c`）**——不要顺带装 `java-env-prep`，也不要因为脚本默认列表里还有别的就一起装。
+例外只有一个：`9c` 依赖 `fin-data`，安装脚本会自动把 `fin-data` 一起装上，这不是"多装"。
 
 | 用户怎么说 | 装什么 |
 | --- | --- |
-| "安装史诗级韭菜"、"装 9c 那个技能" | 只装 `9c`：`--skills 9c` |
+| "安装史诗级韭菜"、"装 9c 那个技能" | 只装 `9c`：`--skills 9c`（脚本自动带上 `fin-data`） |
+| "安装 A 股数据 / fin-data" | 只装 `fin-data`：`--skills fin-data` |
 | "安装环境准备"、"配一下 Java 环境" | 只装 `java-env-prep`：`--skills java-env-prep` |
 | "安装项目导览"、"扫一下这个项目" | 只装 `java-project-tour`：`--skills java-project-tour` |
 | "安装需求分析"、"分析这个需求" | 只装 `java-requirement-analysis`：`--skills java-requirement-analysis` |
-| 没点名 / "全部安装" / 只说"完成安装" | 把清单里的技能全列出来：`--skills 9c,java-env-prep,java-project-tour,java-requirement-analysis`（当前四项） |
+| 没点名 / "全部安装" / 只说"完成安装" | 把清单里的技能全列出来：`--skills 9c,fin-data,java-env-prep,java-project-tour,java-requirement-analysis`（当前五项） |
 | 点名的名字在表里找不到 | **停下来问一句**，不要猜、不要装错技能 |
 
 - 多个技能用逗号连起来：`--skills 9c,java-env-prep`；
-- 不带 `--skills` 时脚本只装默认列表（当前仅 `9c`），**不要用它表达"全部"**；清单加新技能后，"全部安装"要记得把新名字也写进 `--skills`；
+- 不带 `--skills` 时脚本只装默认列表（当前 `9c` + `fin-data`），**不要用它表达"全部"**；清单加新技能后，"全部安装"要记得把新名字也写进 `--skills`；
 - 用户说"只装某个 / 不要某个"时照办，不要顺手多装；
 - 这里的"只装"只约束**技能范围**：第 3 步看板、第 4 步 iFinD 仍按各自的条件走，别把技能范围和组件混为一谈；
 - 仓库新增技能时，这张表要同步加一行（新技能同样能单独装：`--skills <新技能>`）。
@@ -62,10 +65,10 @@ https://raw.githubusercontent.com/walkvoid/dshworkspace/main/SKILL_INSTALL_GUIDE
 
 | 用户怎么说 | 跑哪些步骤 | 明确不做 |
 | --- | --- | --- |
-| "只安装金融看板" | 第 0、1、3 步 | 不装任何技能（跳过 2 / 2.5 / 4） |
-| "只安装史诗级韭菜" | 第 0、1、2 步（`--skills 9c`） | 跳过 2.5 / 4；看板要不要一起装，问一句，别默认装 |
-| "只安装环境准备" | 第 0、1、2.5 步（`--skills java-env-prep`） | 跳过 3 / 4 |
-| 没点名 / "全部安装" | 2 +（2.5，Java 项目才跑）+（3，DSH 才跑）+（4，按需询问） | — |
+| "只安装金融看板" | 第 0、1、2 步（只装 `fin-data`：`--skills fin-data`，看板的取数入口靠它）+ 第 3 步 | 跳过 2.5 / 2.6 / 4；不装 `9c` / Java 技能 |
+| "只安装史诗级韭菜" | 第 0、1、2 步（`--skills 9c`，会自动带上 `fin-data`） | 跳过 2.5 / 4；看板要不要一起装，问一句，别默认装；2.6 只在要用 COS 上传时做 |
+| "只安装环境准备" | 第 0、1、2.5 步（`--skills java-env-prep`），需要连库时加 2.6 | 跳过 3 / 4 |
+| 没点名 / "全部安装" | 2 +（2.5，Java 项目才跑）+（2.6，要连库/上传才跑）+（3，DSH 才跑）+（4，按需询问） | — |
 
 **关浏览器不是安装的固定动作**：只有装了 `java-env-prep`、在 `apply` 里写书签、且浏览器正在运行时，才会问那一次。
 只装看板或只装 `9c` 时，**全程不碰浏览器进程、不写书签**。
@@ -78,6 +81,7 @@ https://raw.githubusercontent.com/walkvoid/dshworkspace/main/SKILL_INSTALL_GUIDE
 | --- | --- | --- |
 | 第 2 步 | 装到用户级还是项目级 | 提问控件（二选一） |
 | 第 2.5 步 | 执行 `apply` 前，先把 `plan` 给用户确认 | 文本 + 提问控件 |
+| 第 2.6 步 | 要不要配 MCP（连库 / COS）；要就把 `mcpPatch` 路径和条目模板给用户 | 提问控件；写 profile 的 `cordis.patch.yml` 前先确认 |
 | 写书签且浏览器在运行 | 「关闭浏览器并写入（推荐）」/「不关，导出 HTML 手动导入」 | 提问控件；**关闭作为推荐项放第一个**，用户没回答仍按"不关"处理，绝不擅自关浏览器 |
 | 第 4 步 | 要不要接入 iFinD；要就直接收密钥 | 两次提问：先二选一，再让用户粘贴密钥 |
 
@@ -122,7 +126,8 @@ Expand-Archive "$env:TEMP\dshworkspace.zip" "$env:TEMP\dshworkspace" -Force
 # 解压后目录名带 -main，重命名为 dshworkspace 再移走
 ```
 
-**成功判定**：`<仓库路径>/.dsh/scripts/stock-data.mjs` 与 `<仓库路径>/.dsh/skills/9c/SKILL.md` 都存在。
+**成功判定**：`<仓库路径>/.dsh/scripts/stock-data.mjs`、`<仓库路径>/.dsh/skills/9c/SKILL.md`
+与 `<仓库路径>/.dsh/skills/fin-data/api/index.mjs` 都存在。
 
 ---
 
@@ -146,9 +151,10 @@ node "<仓库路径>/.dsh/scripts/install-skills.mjs" --root "~/.dsh/skills" --m
 
 - `--mode copy`：复制技能并写入 `repo.txt`（仓库绝对路径），换机器、换目录都能跑；
 - `--mode link`：建目录联接/符号链接，指向仓库，改仓库即时生效（本机自用更省事）；
-- `--skills <a,b>`：只装指定技能（逗号分隔）。**默认只装 `9c`**，装 Java 环境准备要显式指定（见第 2.5 步）；
+- `--skills <a,b>`：只装指定技能（逗号分隔）。**默认只装 `9c` + `fin-data`**（9c 依赖 fin-data 的取数入口，
+  脚本会自动补上），装 Java 环境准备要显式指定（见第 2.5 步）；
 - `--force`：目标已存在时覆盖；
-- `--no-shared`：不铺共享目录。**默认会铺** `.dsh/data/` 与 `.dsh/scripts/` 到 `<技能根>/..`，只有 `9c` 需要它们。
+- `--no-shared`：不铺共享目录。**默认会铺** `.dsh/data/` 与 `.dsh/scripts/` 到 `<技能根>/..`，`9c` 与 `fin-data` 需要它们。
 
 **只装用户点名的技能**（比如"安装史诗级韭菜"）——在命令后面补 `--skills`：
 
@@ -156,31 +162,37 @@ node "<仓库路径>/.dsh/scripts/install-skills.mjs" --root "~/.dsh/skills" --m
 node "<仓库路径>/.dsh/scripts/install-skills.mjs" --root "<技能根目录>" --mode copy --skills 9c
 ```
 
+装 `9c` 时脚本会自动把 `fin-data` 一起装上（`skills` 字段里能看到两项），这是唯一允许的"多装"：
+9c 的行情/财报只从 fin-data 的统一入口取，缺了它 `stock-data.mjs` 起不来。
+
 **安装后的结构**——装 `9c` 时应该和仓库一模一样，`.dsh/` 下是三个并列目录：
 
 ```text
 <技能根目录>/..            ← 通常是 ~/.dsh 或 <项目根>/.dsh
-├── data/                  统一取数层：index / instruments / policy / providers / test
+├── data/                  底层适配器（只被 fin-data 引用）：index / instruments / policy / providers / test
 ├── scripts/               9c 用到的全部脚本：stock-data / bili-sync / cos-upload / verify-quotes …
 └── skills/
-    └── 9c/                SKILL.md + persona / framework / style / eval + scripts/knowledge.mjs
+    ├── 9c/                SKILL.md + persona / framework / style / eval + scripts/knowledge.mjs
+    └── fin-data/          日线数据 + api/（统一取数入口：query / financials / cli）+ findata/
 ```
 
 `knowledge.mjs` 留在技能自己的 `scripts/` 里：它管的是技能内的 `knowledge/`，不属于共享层。
 
-**成功判定**：`results[].status` 为 `copied` / `linked` / `in-place`，装 `9c` 时 `shared` 两条都是 `copied`，
-并且下面五个路径全部存在：
+**成功判定**：`results[].status` 为 `copied` / `linked` / `in-place`，装 `9c` 时 `results` 里同时有
+`9c` 与 `fin-data`、`shared` 两条都是 `copied`，并且下面这些路径全部存在：
 
 ```text
 <技能根目录>/9c/SKILL.md
 <技能根目录>/9c/scripts/knowledge.mjs
+<技能根目录>/fin-data/SKILL.md
+<技能根目录>/fin-data/api/index.mjs
 <技能根目录>/../data/index.mjs
 <技能根目录>/../scripts/stock-data.mjs
 <技能根目录>/../scripts/bili-sync.mjs
 ```
 
 再补一条实测：`node "<技能根目录>/../scripts/stock-data.mjs" quote 601318` 能返回 `ok: true`，
-说明共享层和技能在安装后仍能互通。
+说明「9c → fin-data → 共享适配器」这条链在安装后仍能互通。
 
 **失败处理**：`status: failed` 时会带原因——目标已存在就加 `--force`；技能不存在说明仓库不完整，回到第 1 步。
 
@@ -190,7 +202,7 @@ node "<仓库路径>/.dsh/scripts/install-skills.mjs" --root "<技能根目录>"
 
 技能目录名 `java-env-prep`，是本仓库「Java 程序员技能包」的第 1 个模块。它把一份写着数据库连接、
 各环境 URL、nacos / nexus 地址、git 仓库地址的资料（Word、Excel、截图、聊天记录都行），变成一串已执行的动作：
-生成数据库 MCP 配置、拉取 nacos 配置、写浏览器书签、克隆仓库、生成取日志脚本。
+生成数据库 MCP 条目、拉取 nacos 配置、写浏览器书签、克隆仓库、生成取日志脚本。
 
 **什么时候装**：用户是 Java 后端，或明说"帮我准备开发环境""配一下环境"。它与「史诗级韭菜」互不影响，
 不装也不影响第 3 步的看板。
@@ -201,7 +213,7 @@ node "<仓库路径>/.dsh/scripts/install-skills.mjs" --root "<技能根目录>"
 node "<仓库路径>/.dsh/scripts/install-skills.mjs" --root "<技能根目录>" --skills java-env-prep --mode copy
 ```
 
-> 安装脚本的默认技能列表是 `9c`，**漏掉 `--skills java-env-prep` 就装不到它**。
+> 安装脚本的默认技能列表是 `9c` + `fin-data`，**漏掉 `--skills java-env-prep` 就装不到它**。
 
 **成功判定**：`results[].status` 为 `copied` 或 `linked`，且这三处都存在：
 
@@ -235,12 +247,12 @@ node "<仓库路径>/.dsh/scripts/install-skills.mjs" --root "<技能根目录>"
 **它会产生的副作用**（执行 `apply` 前必须先把 `plan` 给用户确认）：
 
 - 克隆的仓库落在 `<工作目录>/project/<项目名>/`，配置与备份落在 `<工作目录>/project/<项目名>/.env-prep/`；
-- 数据库 MCP 片段默认**自动并入** `~/.dsh/profiles/*/cordis.patch.yml`（按 id 去重、写前备份、注释块包裹），
-  **重启 DSH** 后数据库工具（`mcp__mysql_<id>__*`）才出现；不想自动写入就加 `--no-mcp-apply`；
+- 数据库 MCP **不再自动写入**：`apply` 只会在输出里给出 `mcpPatch`（profile 的 `cordis.patch.yml` 路径）
+  与 `mcpHint`，由用户（或按第 2.6 步的模板）手写条目；
 - 书签按"项目名 / 环境·配置中心·制品库·日志"三层写入，写前备份到 `<out>/bookmarks/*.bak.json`。
 
-仓库的 `.gitignore` 已忽略 `/project/` 与 `.env-prep/`，克隆下来的代码和凭据不会被误提交；profile 本身也不要提交。
-密码只以 `***` 出现，**不要试连、不要扫描内网**。
+仓库的 `.gitignore` 已忽略 `/project/` 与 `.env-prep/`，克隆下来的代码和凭据不会被误提交；profile 目录同样不要提交
+（`cordis.patch.yml` 的 MCP 托管块含明文密码）。密码只以 `***` 出现，**不要试连、不要扫描内网**。
 
 **自检**（无副作用）：
 
@@ -250,6 +262,56 @@ node "<技能根目录>/java-env-prep/scripts/env-prep.mjs"
 
 打印出 `用法：env-prep.mjs <validate|plan|apply|infer> <profile.json> [选项]` 即脚本可用。
 **不带参数时退出码是 1，属正常现象**，不要当失败。
+
+---
+
+## 第 2.6 步：MCP 配置（可选，手写进 profile patch）
+
+**什么时候做**：要用到数据库 MCP（`java-env-prep` / `java-project-tour` 的只读 SQL），或要让模型直接操作
+腾讯云 COS。`9c` 的上传走 `.env-prep/cos-mcp.env`，不依赖 MCP。
+
+**没有单独的 MCP 配置文件**：条目直接写进 DSH profile 的 `cordis.patch.yml`（值含账号密码）。
+
+| 文件 | 说明 |
+| --- | --- |
+| `~/.dsh/profiles/<profile>/cordis.patch.yml` | 落点，通常是 `desktop`；顶层是 entry 数组 |
+| `<工作目录>/.env-prep/` | `java-env-prep` 的产物；`apply` 输出里会给 `mcpPatch` 指向上面那个文件 |
+
+步骤：
+
+1. 先拿到路径：如果刚跑过 `java-env-prep apply`，读它的输出字段 `mcpPatch`（或 `mcpHint`）；
+   没跑过就按 `~/.dsh/profiles/<profile>/cordis.patch.yml` 找，`<profile>` 通常是 `desktop`。
+2. **把下面模板里的占位符换成真实值**，再用 `- insert:` 追加到该文件的顶层数组（已存在同名 `serverName` 就换掉旧的）：
+
+   ```yaml
+   - insert:
+       - id: mcp-mysql-dev
+         name: '@deepseek-ai/dsh-mcp-client'
+         config:
+           serverName: mysql_dev          # 工具前缀 mcp__mysql_dev__*
+           transport: stdio
+           command: npx
+           args: ['-y', '@benborla29/mcp-server-mysql']
+           failOnStartupError: false
+           env:
+             MYSQL_HOST: "10.0.0.11"
+             MYSQL_PORT: "3306"
+             MYSQL_USER: "readonly"
+             MYSQL_PASS: "****"
+             MYSQL_DB: "order_db"
+   ```
+
+   `serverName` 不能重复；每个环境（dev / qa / uat）各一条，id 用 `mcp-mysql-dev` / `-qa` / `-uat`。
+3. **告诉用户文件位置**（这一步必须做）：把 `cordis.patch.yml` 的绝对路径写出来，说明条目已写入/待写入。
+4. 生效：DSH 的 HMR 监听 profile patch，保存后一般几秒内重组；**没生效再重启 DSH**。
+
+**成功判定**：文件里能搜到对应的 `serverName`；工具列表出现 `mcp__mysql_dev__*`、`mcp__cos__*`。
+
+**边界**：
+
+- iFinD 是第三方技能，**不要**写进这里；它自己的 `mcp_config.json` 由第 4 步管理；
+- 这里是**明文凭据**：不要提交 `~/.dsh/profiles/`，不要把 patch 内容贴进对话、issue 或截图；
+- 只写用户确认过的环境，不要猜测密码或去试连数据库。
 
 ---
 
@@ -378,29 +440,35 @@ DSH（有 `ask_user_question` 工具）直接这样问：
 ## 第 5 步：验证
 
 ```bash
-# 1) 数据层能出数（A 股）
+# 1) 取数入口能出数（A 股；9c 与看板走的是同一个入口）
 node "<仓库路径>/.dsh/scripts/stock-data.mjs" all 中国平安
 
 # 2) 港股分红（公告解析，能出除净日）
 node "<仓库路径>/.dsh/scripts/stock-data.mjs" all hk:02318
 
-# 3) 契约测试（24 项，全离线）
+# 3) 契约测试（入口 8 项 + 适配器 24 项，均离线）
+node --test "<仓库路径>/.dsh/skills/fin-data/api/test/query.test.mjs"
 node --test "<仓库路径>/.dsh/data/test/contract.test.mjs"
 
-# 4) 接入 iFinD 后，双源核对
+# 4) 财报接口（真实优先；没有真实源时回落模拟数据，自己会标 mock）
+node "<仓库路径>/.dsh/skills/fin-data/api/cli.mjs" query --kind financials --code 600519 --periods 4
+
+# 5) 接入 iFinD 后，双源核对
 node "<仓库路径>/.dsh/scripts/verify-quotes.mjs"
 
-# 5) 装了 Java 环境准备时，脚本能跑起来（无参数打印用法，退出码 1 属正常）
+# 6) 装了 Java 环境准备时，脚本能跑起来（无参数打印用法，退出码 1 属正常）
 node "<技能根目录>/java-env-prep/scripts/env-prep.mjs"
 ```
 
 - 第 1 项返回 `"ok": true` 且 `quote.price` 是数字 → 通过；
 - 第 3 项 `pass` 等于 `tests` → 通过；
-- 第 4 项仅在第 4 步完成时执行，`全部通过` → 通过；
-- 第 5 项仅在第 2.5 步完成时执行，打印出用法即通过。
+- 第 4 项 `ok: true` 且 `data.periods[].reportDate` 有值 → 通过（`meta.mock: true` 也是通过，只要求标注清楚）；
+- 第 5 项仅在第 4 步完成时执行，`全部通过` → 通过；
+- 第 6 项仅在第 2.5 步完成时执行，打印出用法即通过。
 
-**只验证装了的东西**：装了 `9c` 才跑 1-3 项；接了 iFinD 才跑第 4 项；装了环境准备才跑第 5 项。
-只装看板时本步整体跳过——看板的验证就是第 3 步那次刷新。
+**只验证装了的东西**：装了 `9c`（连带 `fin-data`）才跑 1-4 项；接了 iFinD 才跑第 5 项；装了环境准备才跑第 6 项。
+只装看板时，除了它依赖的 `fin-data` 不装别的技能；第 2 步只为看板装 `fin-data`，`9c` 的验证跳过，
+`fin-data` 入口的验证照跑。
 
 **技能是否被宿主发现**：多数宿主需要重启或重新加载技能；这条重启提示放进第 6 步的"怎么用"里，别单独再写一段。
 
@@ -440,8 +508,9 @@ node "<技能根目录>/java-env-prep/scripts/env-prep.mjs"
 - 只列**本次要求的技能**，没要求的一条都不要出现；
 - 全部成功时标题写"✅ 安装完成：<技能名、技能名>"，让人一眼看到结果；
 - 失败原因压成一行，不要展开排错过程；
-- **只装了看板、没装技能**时，展示的就是组件本身：`## ✅ 安装完成：金融看板`，
+- **只装了看板**时，技能侧只提一句它依赖的 `fin-data` 已装好，展示的就是组件本身：`## ✅ 安装完成：金融看板`，
   一行 `✅ 金融看板（financial-dashboard）｜刷新后左侧栏可见`。
+  不要把 `fin-data` 当成"用户要求的技能"列进技能清单，也不要展开它的用法。
 
 ### 6.2 再说这些技能怎么用
 
@@ -468,12 +537,12 @@ node "<技能根目录>/java-env-prep/scripts/env-prep.mjs"
 | 现象 | 处理 |
 | --- | --- |
 | `/9c` 不出现 | 确认技能根目录是否为本宿主扫描的目录；重启宿主；检查 `SKILL.md` 的 `name` 是否仍为 kebab-case |
-| `/环境准备` 不出现 | 大概率是本次没要求装它：默认只装 `9c`，要补一次 `--skills java-env-prep`；装了就重启宿主 |
+| `/环境准备` 不出现 | 大概率是本次没要求装它：默认只装 `9c` + `fin-data`，要补一次 `--skills java-env-prep`；装了就重启宿主 |
 | 环境准备说"缺少 project / host / url" | 先 `validate`，`problems` 非空就补资料；只缺库名可用 `infer` 从 nacos 配置推断 |
 | 书签没进浏览器 | 浏览器在运行：改 `--bookmark-mode html` 导出后手动导入；备份在 `<out>/bookmarks/` |
-| 环境准备后数据库工具没出现 | MCP 片段写在 `~/.dsh/profiles/*/cordis.patch.yml`，**重启 DSH** 才加载；或检查是否加了 `--no-mcp-apply` |
+| 环境准备后数据库工具没出现 | `apply` 输出里的 `mcpPatch` 就是 profile 的 `cordis.patch.yml`；把 MySQL 条目手写进它的顶层数组，保存后一般几秒生效，没生效再重启 DSH |
 | 技能里说"找不到数据脚本" | `repo.txt` 内容是否指向正确仓库；或仓库被移动，重新跑一次 `install-skills.mjs` |
-| 看板空白 / 无数据 | 插件 host 侧改动需重启 DSH；确认能访问 `qt.gtimg.cn` |
+| 看板空白 / 无数据 | 插件 host 侧改动需重启 DSH；确认 `fin-data` 技能在位（看板的取数入口）、能访问 `qt.gtimg.cn` |
 | iFinD 自检 401 | 密钥不完整或过期，重新获取 |
 | iFinD 自检 403 | 安装成功但账号权益不足，不是安装问题 |
 | iFinD 装了但行情仍走腾讯 | provider 没找到技能目录：把包放到 `<仓库>/.dsh/skills/`，或设 `IFIND_SKILL_DIR` 指向它，再跑 `node "<仓库>/.dsh/scripts/verify-quotes.mjs"` 确认 |
@@ -483,8 +552,8 @@ node "<技能根目录>/java-env-prep/scripts/env-prep.mjs"
 
 ## 边界说明
 
-- 本仓库代码为 MIT，可自由使用；**iFinD 技能包属于第三方**，不随仓库分发。
-- 环境准备的 `apply` 会**写浏览器书签、克隆仓库、改 `~/.dsh/profiles` 的 `cordis.patch.yml`**——都是有副作用的动作，
-  必须先跑 `plan` 让用户确认，再执行。
+- 本仓库代码为 MIT，可自由使用；**iFinD 技能包属于第三方**，不随仓库分发，它的 MCP 密钥也不写进 profile patch。
+- 环境准备的 `apply` 会**写浏览器书签、克隆仓库**——都是有副作用的动作，必须先跑 `plan` 让用户确认，再执行；
+  MCP 条目要用户确认后才手写进 `cordis.patch.yml`。
 - 所有数据来自公开接口或你的授权账号，仅限个人自用，不要对外转售或再分发。
 - 人格分析输出为**方法论模拟**，不构成投资建议。

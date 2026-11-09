@@ -36,6 +36,9 @@ COS 是可选的——没有 COS 时，视频文档与 claims 全部保存在本
 2. 本目录下 `repo.txt` 指向的仓库根 `.dsh/scripts/stock-data.mjs` —— link 模式与旧安装的兜底；
 3. 都不成立 → 告诉用户"找不到数据脚本"并请其确认仓库路径，**不要凭记忆编数字**。
 
+脚本的取数**只经过 fin-data 的统一入口**（`.dsh/skills/fin-data/api/`）：行情、财报、分红、汇率
+都在那里归一与记录来源，本技能不直接引用 `.dsh/data/`。**`fin-data` 技能必须一起安装。**
+
 ## 二、执行流程（严格按顺序）
 
 ### 第 1 步：解析标的
@@ -46,7 +49,8 @@ COS 是可选的——没有 COS 时，视频文档与 claims 全部保存在本
 node <本目录>/../../scripts/stock-data.mjs all "中国平安"
 ```
 
-脚本返回 JSON：`subject` / `quote` / `fundamentals` / `annual` / `dividends` / `derived`。
+脚本返回 JSON：`subject` / `quote` / `fundamentals` / `annual` / `dividends` / `derived`，
+外加取数溯源 `sources` / `asOf` 与质量标记 `dataQuality`。
 `ok: false` 或抛错时走第 6 步降级，**不要凭记忆补数字**。
 
 ### 第 2 步：先过"组合层级"这道门
@@ -111,6 +115,7 @@ node <本目录>/../../scripts/stock-data.mjs all "中国平安"
 
 1. **数字只有一个来源**：本次脚本输出。不得引用训练记忆里的价格、PE、股息率、财报数字。
 2. **缺数据就说缺**：某个字段为 `null` 时，写明"该项缺数据"，并说明它对结论的影响方向。
+   财报为模拟数据（`dataQuality.financials === "mock"`）时，同样必须写明，不能当成真实财报。
 3. **不预测短期涨跌**：他明确放弃波动率回报，任何"明天/下周会涨"的表述都出戏。
 4. **不改写结论**：一票否决就是否决，不能因为"公司很优秀"而翻转。
 5. **不冒充本人**：不用第一人称声称自己是该 UP 主；用"按他的框架""他会怎么说"。
@@ -118,17 +123,23 @@ node <本目录>/../../scripts/stock-data.mjs all "中国平安"
 
 ## 四、脚本与数据层
 
-`stock-data.mjs` 只是 `data/index.mjs`（统一取数入口）的 CLI 包装：
-取数、归一化、缓存、失败回退与来源记录都在数据层完成，脚本只负责"取什么"和"怎么算"。
+`stock-data.mjs` 是 fin-data 统一查询入口（`.dsh/skills/fin-data/api/index.mjs`）的 CLI 包装：
+取数、归一化、缓存、失败回退、来源与新近度都由 fin-data 负责，脚本只负责"取什么"和"怎么算"。
 
 ```bash
 node .dsh/scripts/stock-data.mjs resolve 中国平安     # 名称 -> 候选代码
 node .dsh/scripts/stock-data.mjs quote 601318         # 仅行情
 node .dsh/scripts/stock-data.mjs all 中国平安          # 全量（默认）
 node .dsh/scripts/stock-data.mjs all 601318 --periods 6
-node .dsh/scripts/stock-data.mjs all hk:02318         # 港股：仅行情，财务类为空
+node .dsh/scripts/stock-data.mjs all hk:02318         # 港股：行情 + 财报 + 分红公告
+node .dsh/scripts/stock-data.mjs providers            # fin-data 入口自述
 ```
 
+- 脚本输出里的 `sources` / `asOf` 直接来自 fin-data 的信封（`meta.source` / `meta.asOf`），
+  回答时引用这两个字段，不要自己写死来源名。
+- **财报走 fin-data 的 `financials` 接口**：正常情况下是真实指标；上游不可用时 fin-data 会回落
+  **模拟财报**，此时 `dataQuality.financials === "mock"`、`warnings` 里第一条就是免责说明。
+  这种时候必须写明"财报为模拟数据，仅供联调"，穿透回报率等定量结论**不能当作真实判断**。
 - 支持 **A 股（sh/sz/bj）与港股**；港股代码写 `hk:02318` 或 `02318`。
 - 港股与 A 股的差异，回答时必须说明，不要用记忆补：
   1. 港股分红来自**港交所派息公告解析**：`dividends[]` 带 `exDate`、`payDate`、`currency`，
@@ -138,7 +149,7 @@ node .dsh/scripts/stock-data.mjs all hk:02318         # 港股：仅行情，财
   3. 穿透回报率同样按汇率折算；派息率只统计**派息记录完整**的财年（残缺年份会被剔除，
      否则"最低派息率"会被截断的年份压低）。
 - 输出字段含义见 `framework.md` 的"数据字段对照"。
-- `meta.stale: true` 表示上游失败后返回的是过期缓存，必须在回答里标注数据时点。
+- `meta.stale` / `warnings` 里出现"过期缓存"时，必须在回答里标注数据时点。
 
 ## 五、/9c update：增量更新视频知识库
 
@@ -182,9 +193,9 @@ node .dsh/scripts/stock-data.mjs all hk:02318         # 港股：仅行情，财
 
    新 claim 默认是 `candidate` + `reviewed:false`，**不会自动进 runtime**；人工核对后才改成 `active`。
 
-4. 可选上传：配置了 `.env-prep/cos-mcp.env` 或 COS 环境变量时，`update` 会自动上传；
-   想强制只存本地就加 `--no-cos`；也可以单独跑
-   `node .dsh/scripts/bili-sync.mjs upload --prefix 9c/docs`。
+4. 可选上传：配置了 `.env-prep/cos-mcp.env`（或已导出的 `COS_*` 环境变量）时，`update` 会自动上传；
+   COS 的 MCP server（如果要装）是另一套配置，写在 profile 的 `cordis.patch.yml` 里，和上传凭据无关。
+   想强制只存本地就加 `--no-cos`；也可以单独跑 `node .dsh/scripts/bili-sync.mjs upload --prefix 9c/docs`。
 
 ### 失败处理
 

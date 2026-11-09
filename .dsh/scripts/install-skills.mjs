@@ -38,10 +38,13 @@ const SKILLS_DIR = path.join(DSH_ROOT, 'skills');
 const SHARED_DIRS = ['data', 'scripts'];
 
 /** 依赖共享目录的技能。新增这类技能时记得加进来。 */
-const SHARED_SKILLS = new Set(['9c']);
+const SHARED_SKILLS = new Set(['9c', 'fin-data']);
+
+/** 技能依赖：装左边的必须带上右边的（9c 只从 fin-data 的统一入口取数）。 */
+const DEPENDENCIES = { '9c': ['fin-data'] };
 
 /** 默认安装全部技能。 */
-const DEFAULT_SKILLS = ['9c'];
+const DEFAULT_SKILLS = ['9c', 'fin-data'];
 
 /** copy 模式下写入技能目录、用于定位仓库的文件。 */
 const REPO_MARKER = 'repo.txt';
@@ -93,13 +96,20 @@ function linkDir(target, at) {
 
 /**
  * 复制目录，跳过仓库内部的缓存类文件。
+ *
+ * `.venv` / `__pycache__` 是 fin-data 的 Python 运行期产物，`data/local` 是按需拉取
+ * 的非种子数据（gitignore），都不该进安装副本。
  * @param from - 源目录。
  * @param to - 目标目录。
  */
 function copyDir(from, to) {
   fs.cpSync(from, to, {
     recursive: true,
-    filter: (source) => !/[\\/](node_modules|\.cache)([\\/]|$)/.test(source),
+    filter: (source) => {
+      if (/[\\/](node_modules|\.cache|\.venv|__pycache__|\.pytest_cache)([\\/]|$)/.test(source)) return false;
+      if (/[\\/]data[\\/]local([\\/]|$)/.test(source)) return false;
+      return true;
+    },
   });
 }
 
@@ -145,8 +155,17 @@ function main() {
   if (path.basename(root) === '.dsh') root = path.join(root, 'skills');
   if (!fs.existsSync(root)) fs.mkdirSync(root, { recursive: true });
 
-  const results = [];
+  // 依赖展开：点名装 9c 时，fin-data 必须一起装（它提供统一取数入口）。
+  const requested = [];
   for (const name of options.skills) {
+    if (!requested.includes(name)) requested.push(name);
+    for (const dependency of DEPENDENCIES[name] ?? []) {
+      if (!requested.includes(dependency)) requested.push(dependency);
+    }
+  }
+
+  const results = [];
+  for (const name of requested) {
     const source = path.join(SKILLS_DIR, name);
     const destination = path.join(root, name);
     if (!fs.existsSync(source)) {
@@ -173,7 +192,7 @@ function main() {
   // 共享目录铺到 <root>/..：技能里的相对路径按“与 skills 同级”解析，仓库内和安装后是同一条。
   const payloadRoot = path.resolve(root, '..');
   const shared = [];
-  const needsShared = options.shared && options.skills.some((name) => SHARED_SKILLS.has(name));
+  const needsShared = options.shared && requested.some((name) => SHARED_SKILLS.has(name));
   if (needsShared) {
     for (const dir of SHARED_DIRS) {
       const source = path.join(DSH_ROOT, dir);
@@ -186,7 +205,13 @@ function main() {
     }
   }
 
-  console.log(JSON.stringify({ repo: REPO_ROOT, root, payloadRoot, mode: options.mode, results, shared }, null, 2));
+  console.log(
+    JSON.stringify(
+      { repo: REPO_ROOT, root, payloadRoot, mode: options.mode, skills: requested, results, shared },
+      null,
+      2,
+    ),
+  );
   const failed = results.filter((item) => item.status === 'failed').length
     + shared.filter((item) => item.status === 'failed').length;
   process.exitCode = failed === 0 ? 0 : 1;

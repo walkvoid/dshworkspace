@@ -1,4 +1,4 @@
-import { apply, ROUTE_PATH, parseSnapshot } from '../index.js';
+import { apply, ROUTE_PATH } from '../index.js';
 
 const routes = new Map();
 const ctx = {

@@ -7,15 +7,14 @@
  * request first asks the composition's `connection` service for a rejection
  * (Host/Origin fence + browser authentication) before any upstream work.
  *
- * Fetching, normalization, caching, and stale fallback all live in the shared
- * data layer (`../../data/index.mjs`); this file only adapts the unified result
- * to the response shape the client already understands.
+ * Fetching, normalization, caching, and stale fallback all live in the fin-data
+ * skill's unified query entry (`../../skills/fin-data/api/index.mjs`); this file
+ * only adapts that envelope to the response shape the client already understands.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { get, getMany } from '../../data/index.mjs';
-import { parseInstrument } from '../../data/instruments.mjs';
+import { parseInstrument, query, queryMany } from '../../skills/fin-data/api/index.mjs';
 import {
   STORE_FILE,
   THRESHOLDS,
@@ -79,14 +78,8 @@ export const MAX_CODES = 24;
 const DAILY_BARS = 120;
 
 /**
- * Re-export the snapshot parser so existing tooling keeps one import site.
- * @deprecated import from `data/providers/tencent.mjs` instead.
- */
-export { parseQuoteText as parseSnapshot } from '../../data/providers/tencent.mjs';
-
-/**
  * Map a normalized quote onto the field names the client reads.
- * @param quote - normalized quote from the data layer.
+ * @param quote - normalized quote from the fin-data entry.
  * @returns the client-facing quote.
  */
 export function toClientQuote(quote) {
@@ -180,10 +173,10 @@ export function apply(ctx) {
   /** 拉一份行情 +（可选）日线，拼成客户端认识的响应体。 */
   const buildQuotes = async (codes, dailyInstrument) => {
     const [snapshot, daily] = await Promise.all([
-      getMany({ kind: 'quote', instruments: codes }),
+      queryMany({ kind: 'quote', instruments: codes }),
       dailyInstrument === undefined
         ? Promise.resolve(undefined)
-        : get({ kind: 'bars', instrument: dailyInstrument.key, options: { limit: DAILY_BARS } }),
+        : query({ kind: 'bars', instrument: dailyInstrument.key, options: { limit: DAILY_BARS, source: 'live' } }),
     ]);
 
     const quotes = snapshot.items.filter((item) => item.ok === true).map((item) => toClientQuote(item.data));

@@ -1,12 +1,36 @@
 # fin-data
 
-A 股日线数据仓库 + 取数 skill：一个标的（股票/指数）一个 CSV，只追加，随 `dshworkspace` 仓库分发。
+A 股日线数据仓库 + 统一取数 skill：一个标的（股票/指数）一个 CSV，只追加，随 `dshworkspace` 仓库分发；
+同时作为 9c 与金融看板的**唯一取数入口**（行情 / 财报 / 分红 / 汇率 / 数据状态）。
 
 - 数据：不复权日线（`date,symbol,open,high,low,close,volume,amount,turnover,src`），`data/daily/cn/<exchange|index>/<code>.csv`
 - 取数链：`akshare → adata → iFinD(仅校验) → 网页直连`，逐标的失败降级
 - 增量：`update` 只追加缺失交易日；`get` 单票读取一个文件
+- 统一入口：`api/index.mjs`（JS 门面）+ `api/cli.mjs`（命令行），契约见 [`api/README.md`](./api/README.md)
 
 安装与使用见下方；字段与目录约定见 `references/schema.md`。
+
+## 统一查询入口
+
+```js
+import { query, queryMany } from '<fin-data>/api/index.mjs';
+
+await query({ kind: 'quote', instrument: '600519' });
+await query({ kind: 'financials', instrument: 'hk:00700', options: { periods: 4 } });
+await queryMany({ kind: 'quote', instruments: ['sh600519', 'sz000001'] });
+```
+
+```powershell
+node api/cli.mjs status
+node api/cli.mjs query --kind financials --code 600519 --periods 4
+node api/cli.mjs query --kind financials --code 600519 --source mock   # 强制模拟
+node api/cli.mjs query --kind bars --code 600519 --source local --limit 120
+```
+
+- kind：`status` / `quote` / `bars` / `financials` / `dividends` / `annual` / `universe` / `fx` / `search` / `announcements`；
+- 财报（`financials`）：真实指标优先，取不到回落**模拟数据**（`meta.mock: true`）；`source` 可取 `auto`/`real`/`mock`；
+- `bars` 默认实时源（前复权）；`source: 'local'` 读本仓 CSV（不复权，`meta.adjust = 'none'`）；
+- `.dsh/data/` 只是入口的内部适配器，消费方不要直接引用。
 
 ## 安装
 

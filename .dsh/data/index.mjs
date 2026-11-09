@@ -1,5 +1,10 @@
 /**
- * The single data entry point.
+ * Provider router: fin-data's internal adapter layer (not a consumer entry point).
+ *
+ * Consumers (9c, the financial dashboard, shell scripts) must go through
+ * `skills/fin-data/api/index.mjs`, which owns the public request/envelope shape,
+ * the `financials` interface, local-CSV bars, and mock fallbacks. This module is
+ * imported by fin-data only; calling it directly re-introduces a second data seam.
  *
  *   const result = await get({ kind: 'quote', instrument: 'hk:02318' });
  *

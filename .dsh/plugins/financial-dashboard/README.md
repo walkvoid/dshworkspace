@@ -37,10 +37,15 @@ git clone https://github.com/walkvoid/dshworkspace.git D:\dshworkspace
 整页看板与右侧栏紧凑面板都有「龟龟选股」子标签：
 
 - **每天 16:05 跑一次**：以香港/北京时间为准，宿主在 16:05 自动生成当天榜单；当天 16:05 之前打开页面会沿用最近一份，并在标题旁标明是哪天的结果。已有结果直接复用，一个自然日只有一份。
-- **只选港股通**：观察池先与东财港股通板块（`b:DLMK0144`）求交集，名单按自然日缓存；REITs、港灯等不在港股通的标的会被自动剔除。
+- **只选港股通**：观察池先与港股通名单求交集（名单由 fin-data 的 `universe` 接口提供，入口内按自然日缓存）；
+  REITs、港灯等不在港股通的标的会被自动剔除。
 - **选股口径**（见 `picks.js` 的 `THRESHOLDS`）：股息率 ≥ 4.5%、PE ≤ 12、派息率 ≤ 95%、
   负债率 ≤ 75%，每个行业最多 3 只；按 股息 40% / 估值 25% / 资产折价 20% / 派息余地 15% 打分，取前 10。
 - **列表字段**：市值、净现金、穿透回报率、股息率、PE、PB、派息率、负债率。净现金 = 现金及等价物 + 短期存款 + 中长期存款 − 短期贷款 − 长期贷款 − 应付票据(非流动) − 融资租赁负债；季报没有明细时回退到最近一份半年报/年报；穿透回报率 = 净利润 × 派息率 ÷（港币市值 × HKDCNY）。
+  这些字段都来自 fin-data 的 `financials` 接口（`balance.netCash` 也在其中），本插件不再自己拼财报。
+- **财报来源**：`financials` 优先返回真实指标；上游不可用时 fin-data 会回落模拟财报，
+  选股结果的每一行带 `mock`、整份榜单带 `financialsSource`（`eastmoney` / `mixed` / `mock`），
+  这时不能把榜单当真实筛选结论。
   银行与融资租赁**整类不进观察池**——他明确说过「银行的表我看不清楚，负债看不清的一律不买」
   （`BV16fH76GEoD` @ 01:30:12，已作为 active claim 入库）。
 - **观察池**是固定港股名单（公用事业、电信、收费公路、REIT、消费、银行、医药、综合），
@@ -59,7 +64,7 @@ GET /financial-dashboard/picks?history=1    # 历史日期列表
 
 | 文件 | 作用 |
 | --- | --- |
-| `index.js` | Host 半侧：注册 `GET /financial-dashboard/quotes` 与 `GET /financial-dashboard/picks`，把参数转成统一数据层的 `getMany()` / `get()` 调用，再把结果映射成客户端认识的字段 |
+| `index.js` | Host 半侧：注册 `GET /financial-dashboard/quotes` 与 `GET /financial-dashboard/picks`，把参数转成 fin-data 统一入口的 `queryMany()` / `query()` 调用，再把结果映射成客户端认识的字段 |
 | `picks.js` | 龟龟选股：观察池、硬门槛、打分、每日结果落盘与历史摘要 |
 | `client.js` | 生成的浏览器半侧：内联 ECharts 5.6.0，注册标签类型、正文、标题、开始页卡片与左侧栏面板 |
 | `client-source.js` | 浏览器半侧的源码（Authoring source） |
@@ -70,8 +75,10 @@ GET /financial-dashboard/picks?history=1    # 历史日期列表
 | `locale/*.json` | 插件管理中的显示标题与描述（`meta.title` / `meta.description`） |
 | `icon.svg` | 插件图标 |
 
-行情抓取、归一化、缓存与过期兜底都在仓库 `.dsh/data/` 的[数据层](../../../README.md#4-数据层统一取数入口)里；
-本插件通过 `../../data/index.mjs` 引用它（安装时是指向本目录的 junction，因此 `.dsh/data/` 必须与它一起在位）。
+取数**只经过 fin-data 技能的统一查询入口** `../../skills/fin-data/api/index.mjs`
+（行情 / 财报 / 分红 / 汇率都在那里归一，契约见 `fin-data/api/README.md`）。
+本插件通过相对路径引用它：安装时是指向本目录的 junction，因此 **`.dsh/skills/fin-data/` 必须与它一起在位**，
+`.dsh/data/` 也随仓库一起（它是 fin-data 的内部适配器）。
 
 ## Host 路由
 
@@ -93,7 +100,7 @@ GET /financial-dashboard/quotes?codes=sh600519,sz000001[&daily=sh600519]
 }
 ```
 
-- 快照按自然日缓存（同一份代码 + 日线组合当天只打一次上游，`?refresh=1` 强制重拉）；日线在数据层缓存 5 分钟。
+- 快照按自然日缓存（同一份代码 + 日线组合当天只打一次上游，`?refresh=1` 强制重拉）；日线在 fin-data 入口里缓存 5 分钟。
 - 上游失败时返回上一次缓存并带 `stale: true`；冷缓存失败返回 `ok: false`、空数组与 `error`，
   客户端据此显示降级/空态而不是白屏。
 

@@ -4,9 +4,14 @@
  * 只做四件事：
  *   1. 固定一个「非周期、看得懂负债」的港股观察池（公用 / 电信 / 公路 / 收租 / 消费 / 医药 / 综合），
  *      只保留港股通标的；银行、融资租赁、地产、保险、博彩一律不进；
- *   2. 拉实时快照、最近一期财报与资产负债表（股息率、PE、PB、派息率、负债率、市值、净现金）；
+ *   2. 拉实时快照与最近一期财报（股息率、PE、PB、派息率、负债率、市值、净现金）；
  *   3. 按他的硬门槛过滤：股息率、估值、派息可持续、负债；算穿透回报率做展示；
  *   4. 打分排序，取前 10，按行业限流，避免一整屏都是公路。
+ *
+ * 取数**只经过 fin-data 的统一入口**（`../../skills/fin-data/api/index.mjs`）：
+ * 行情（`quote`）、财报（`financials`）、汇率（`fx`）、港股通名单（`universe`）都在那里归一；
+ * 本文件只做选股口径与打分，不再直接访问任何上游接口。
+ * 财报如果回落到模拟数据，行上带 `mock: true`，榜单据此标注，不冒充实数。
  *
  * 这是一个「收息层」的粗筛，不替代 `framework.md` 的三因子逐项分析；
  * 结果每天落盘一份，历史不可变，便于回看当时的口径。
@@ -14,17 +19,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { get } from '../../data/index.mjs';
+import { query, toMetricRow } from '../../skills/fin-data/api/index.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 /** 每日结果落盘位置（运行期数据，git 忽略）。 */
 export const STORE_FILE = path.join(HERE, '.data', 'picks.json');
-
-/** 港股通名单缓存：东财板块 b:DLMK0144，按自然日缓存。 */
-export const CONNECT_FILE = path.join(HERE, '.data', 'hk-connect.json');
-const CONNECT_URL = 'https://push2.eastmoney.com/api/qt/clist/get';
-const CONNECT_FS = 'b:DLMK0144';
 
 /** 观察池：只放他框架里认的生意。银行/融资租赁整类排除——他明确说过「银行的表我看不清楚，
  *  负债看不清的一律不买」（BV16fH76GEoD @ 01:30:12）。地产、保险、博彩、周期股同样不进。 */
@@ -142,146 +142,36 @@ async function mapLimit(items, limit, worker) {
   return results;
 }
 
-/** 拉一次港股通名单（东财板块），失败时退回本地缓存；都没有就返回 null 表示不过滤。 */
-async function fetchConnectCodes() {
-  const codes = new Set();
-  for (let page = 1; page <= 12; page += 1) {
-    const query = new URLSearchParams({
-      pn: String(page),
-      pz: '100',
-      po: '1',
-      np: '1',
-      fltt: '2',
-      invt: '2',
-      fid: 'f3',
-      fs: CONNECT_FS,
-      fields: 'f12',
-    });
-    const response = await fetch(`${CONNECT_URL}?${query.toString()}`, {
-      headers: { accept: 'application/json', 'user-agent': 'Mozilla/5.0' },
-    });
-    if (!response.ok) throw new Error(`HK Connect list HTTP ${response.status}`);
-    const body = await response.json();
-    const diff = body?.data?.diff ?? [];
-    for (const row of diff) if (row?.f12) codes.add(String(row.f12));
-    if (diff.length < 100) break;
-  }
-  if (codes.size === 0) throw new Error('HK Connect list is empty');
-  return [...codes];
-}
-
 /**
- * 港股通名单（按自然日缓存）。
+ * 港股通名单：走 fin-data 的 `universe` 接口（东财板块，入口内按自然日缓存）。
  * @returns 代码集合；拿不到时返回 null，调用方选择不过滤而不是把榜单清空。
  */
-export async function loadConnectCodes(now = new Date()) {
-  const today = dateKey(now);
-  const readCache = () => {
-    try {
-      const cached = JSON.parse(fs.readFileSync(CONNECT_FILE, 'utf8'));
-      if (Array.isArray(cached?.codes) && cached.codes.length > 0) return new Set(cached.codes);
-    } catch {
-      /* 没有缓存 */
-    }
-    return null;
-  };
-  const cached = readCache();
-  if (cached !== null) {
-    try {
-      const stored = JSON.parse(fs.readFileSync(CONNECT_FILE, 'utf8'));
-      if (stored.date === today) return cached;
-    } catch {
-      /* 继续刷新 */
-    }
-  }
-  try {
-    const codes = await fetchConnectCodes();
-    fs.mkdirSync(path.dirname(CONNECT_FILE), { recursive: true });
-    fs.writeFileSync(CONNECT_FILE, `${JSON.stringify({ date: today, codes }, null, 2)}\n`, 'utf8');
-    return new Set(codes);
-  } catch {
-    return readCache();
-  }
+export async function loadConnectCodes() {
+  const result = await query({ kind: 'universe', options: { id: 'hk-connect' } });
+  if (result.ok !== true) return null;
+  const codes = new Set((result.data?.members ?? []).map((member) => member.code));
+  return codes.size > 0 ? codes : null;
 }
 
-/** 港股资产负债表：只取「现金类 - 有息负债」这几行，用 STD_ITEM_CODE 定位。 */
-const BALANCE_URL = 'https://datacenter.eastmoney.com/securities/api/data/v1/get';
-const balanceCache = new Map();
-
-function parseBalanceRows(rows) {
-  if (!Array.isArray(rows) || rows.length === 0) return null;
-  // 季报只有十几行汇总，没有现金/借款明细；从最近一期往前找第一份带明细的报表。
-  const periods = [...new Set(rows.map((row) => String(row.REPORT_DATE)))].sort().reverse();
-  for (const period of periods) {
-    const current = rows.filter((row) => String(row.REPORT_DATE) === period);
-    const amount = (code) => {
-      const hit = current.find((row) => String(row.STD_ITEM_CODE) === code);
-      const value = Number(hit?.AMOUNT);
-      return Number.isFinite(value) ? value / 1e8 : null;
-    };
-    const cash = amount('004002010');
-    const shortDeposit = amount('004002011');
-    const longDeposit = amount('004001030');
-    const shortLoan = amount('004011010');
-    const longLoan = amount('004020001');
-    const notes = amount('004020018');
-    const debtOk = shortLoan !== null || longLoan !== null || notes !== null;
-    if (cash === null || !debtOk) continue;
-    const lease = (amount('004011006') ?? 0) + (amount('004020005') ?? 0);
-    const debt = (shortLoan ?? 0) + (longLoan ?? 0) + (notes ?? 0) + lease;
-    return {
-      reportDate: period.slice(0, 10),
-      netCashYi: Number((cash + (shortDeposit ?? 0) + (longDeposit ?? 0) - debt).toFixed(1)),
-    };
-  }
-  return null;
-}
-
-async function fetchHkBalance(code) {
-  const secu = `${code.replace(/^hk:/, '')}.HK`;
-  if (balanceCache.has(secu)) return balanceCache.get(secu);
-  const query = new URLSearchParams({
-    reportName: 'RPT_HKF10_FN_BALANCE',
-    columns: 'ALL',
-    filter: `(SECUCODE="${secu}")`,
-    pageSize: '400',
-    sortColumns: 'REPORT_DATE',
-    sortTypes: '-1',
-  });
-  let result = null;
-  try {
-    const response = await fetch(`${BALANCE_URL}?${query.toString()}`, {
-      headers: { accept: 'application/json', 'user-agent': 'Mozilla/5.0' },
-    });
-    if (response.ok) {
-      const body = await response.json();
-      result = parseBalanceRows(body?.result?.data);
-    }
-  } catch {
-    result = null;
-  }
-  balanceCache.set(secu, result);
-  return result;
-}
-
-/** 把一只股票的快照 + 最近一期财报 + 资产负债表拉成一行候选。 */
+/** 把一只股票的快照 + 最近一期财报拉成一行候选。 */
 async function loadCandidate(item, fxRate) {
-  const [quote, fundamentals, balance] = await Promise.all([
-    get({ kind: 'quote', instrument: item.code }),
-    get({ kind: 'fundamentals', instrument: item.code, options: { periods: 1 } }),
-    fetchHkBalance(item.code),
+  const [quote, financials] = await Promise.all([
+    query({ kind: 'quote', instrument: item.code }),
+    query({ kind: 'financials', instrument: item.code, options: { periods: 1 } }),
   ]);
   if (quote.ok !== true || quote.data === null) return { code: item.code, sector: item.sector, failed: '行情不可用' };
-  const row = fundamentals.ok === true ? fundamentals.data?.rows?.[0] : undefined;
-  if (row === undefined) return { code: item.code, sector: item.sector, failed: '没有财报指标' };
+  const period = financials.ok === true ? financials.data?.periods?.[0] : undefined;
+  if (period === undefined) return { code: item.code, sector: item.sector, failed: '没有财报指标' };
 
+  // fin-data 的财报是三大表形状；选股口径继续用亿元指标行，换算只在 fin-data 里做一次。
+  const row = toMetricRow(period);
   const price = num(quote.data.price);
   const bps = num(row.bps);
   const pb = price !== null && bps !== null && bps > 0 ? price / bps : null;
   const totalCapYi = num(quote.data.totalCapYi);
   const netProfitYi = num(row.netProfitYi);
   const payoutRatio = num(row.payoutRatioSnapshot);
-  const netCashYi = balance === null ? null : balance.netCashYi;
+  const netCashYi = num(row.netCashYi);
   // 港股报表多为人民币、市值按港币计：有汇率才给穿透回报率，币种不明宁缺勿错。
   const penetrationReturn =
     fxRate !== null && totalCapYi !== null && totalCapYi > 0 && netProfitYi !== null && payoutRatio !== null
@@ -304,6 +194,9 @@ async function loadCandidate(item, fxRate) {
     netProfitYi: round(netProfitYi, 2),
     netProfitYoY: round(num(row.netProfitYoY), 2),
     reportDate: row.reportDate ?? null,
+    // 财报来源要跟着行走：模拟数据不能在榜单里冒充实数。
+    financialsSource: period.source ?? null,
+    mock: period.mock === true,
   };
 }
 
@@ -313,13 +206,14 @@ async function loadCandidate(item, fxRate) {
  */
 export async function runSelection(now = new Date()) {
   const date = dateKey(now);
-  const [connect, fx] = await Promise.all([loadConnectCodes(now), get({ kind: 'fx', pair: 'HKDCNY' })]);
+  const [connect, fx] = await Promise.all([loadConnectCodes(), query({ kind: 'fx', pair: 'HKDCNY' })]);
   const fxRate = fx.ok === true ? num(fx.data?.rate) : null;
   const universe =
     connect === null ? UNIVERSE : UNIVERSE.filter((item) => connect.has(item.code.replace(/^hk:/, '')));
   const rows = await mapLimit(universe, 6, (item) => loadCandidate(item, fxRate));
   const failed = rows.filter((row) => row.failed !== undefined).map((row) => ({ code: row.code, reason: row.failed }));
   const candidates = rows.filter((row) => row.failed === undefined);
+  const mockFinancials = candidates.filter((row) => row.mock === true).length;
 
   const passed = [];
   const rejected = [];
@@ -354,6 +248,10 @@ export async function runSelection(now = new Date()) {
     fxRate,
     quoted: candidates.length,
     passed: passed.length,
+    // 财报来源：全是真实值时是 eastmoney；有回落就标出来，前端与历史记录都能看出这一天是不是模拟数据。
+    financialsSource:
+      mockFinancials === 0 ? 'eastmoney' : mockFinancials === candidates.length ? 'mock' : 'mixed',
+    mockFinancials,
     picks,
     rejected: rejected.slice(0, 20),
     failed,

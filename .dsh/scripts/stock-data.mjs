@@ -1,20 +1,27 @@
 #!/usr/bin/env node
 /**
- * 人格化个股分析的数据接地脚本（A 股 / 港股行情）。
+ * 人格化个股分析的数据接地脚本（A 股 / 港股），取自 **fin-data 的统一查询入口**。
  *
- * 本脚本只是 data/ 统一数据层的一个 CLI 包装：取数、归一、缓存、降级、
- * 来源与新近度全部由 data/index.mjs 负责，这里只做"取什么"和"怎么算"。
+ * 取数、归一、缓存、降级、来源与新近度全部由 `fin-data/api` 负责；
+ * 本脚本只做「取什么」和「怎么算」，不再直接引用 `.dsh/data/`。
  *
  * 用法：
  *   node .dsh/scripts/stock-data.mjs resolve 中国平安
  *   node .dsh/scripts/stock-data.mjs quote 601318
  *   node .dsh/scripts/stock-data.mjs all 中国平安
- *   node .dsh/scripts/stock-data.mjs all hk:02318        # 港股：仅行情，财务源未接入
+ *   node .dsh/scripts/stock-data.mjs all hk:02318         # 港股：行情 + 财报 + 分红公告
+ *   node .dsh/scripts/stock-data.mjs providers            # fin-data 入口自述
  *
  * 输出：单个 JSON 到 stdout。取不到的字段一律 null，不做猜测。
+ * `dataQuality.financials === "mock"` 时，财报为 fin-data 的模拟数据，不能当作真实经营数据。
  */
-import { get, getAnnual, getDividends, getFundamentals, getQuote, listProviders, searchInstrument } from '../data/index.mjs';
-import { parseInstrument, toSecuCode } from '../data/instruments.mjs';
+import {
+  describe as describeFinData,
+  parseInstrument,
+  query,
+  toMetricRow,
+  toSecuCode,
+} from '../skills/fin-data/api/index.mjs';
 
 /** 输出里保留的行情字段（与改造前逐字段一致）。 */
 const QUOTE_KEYS = [
@@ -257,23 +264,23 @@ async function buildSubject(input, options) {
   let instrument = parseInstrument(input);
   let resolvedFrom = null;
   if (instrument === undefined) {
-    const found = await searchInstrument(input);
+    const found = await query({ kind: 'search', query: input });
     const first = found.ok ? found.data.candidates[0] : undefined;
     if (first === undefined) {
       throw new Error(`无法解析标的："${input}"。请改用代码，例如 601318 / hk:02318。`);
     }
     instrument = parseInstrument(first.instrument);
-    // 只保留与选中标的市场相同的候选，避免 A/H 双上市时把两个市场混在一份输出里。
+    // 只保留与选中标的市场相同的候选，避免 A/H 双上市时把两个市场混进同一份输出。
     const sameMarket = found.data.candidates.filter((candidate) => candidate.market === instrument.market);
     resolvedFrom = { query: input, candidates: sameMarket.map(mapCandidate) };
   }
 
-  const [quoteResult, fundamentalsResult, annualResult, dividendsResult, fxResult] = await Promise.all([
-    getQuote(instrument.key),
-    getFundamentals(instrument.key, { periods: options.periods }),
-    getAnnual(instrument.key, { years: 3 }),
-    getDividends(instrument.key, { limit: 12 }),
-    instrument.market === 'hk' ? get({ kind: 'fx', pair: 'HKDCNY' }) : Promise.resolve(undefined),
+  const [quoteResult, financialsResult, annualResult, dividendsResult, fxResult] = await Promise.all([
+    query({ kind: 'quote', instrument: instrument.key }),
+    query({ kind: 'financials', instrument: instrument.key, options: { periods: options.periods } }),
+    query({ kind: 'annual', instrument: instrument.key, options: { years: 3 } }),
+    query({ kind: 'dividends', instrument: instrument.key, options: { limit: 12 } }),
+    instrument.market === 'hk' ? query({ kind: 'fx', pair: 'HKDCNY' }) : Promise.resolve(undefined),
   ]);
 
   if (!quoteResult.ok) throw new Error(`行情取数失败：${quoteResult.error.message}`);
@@ -296,12 +303,15 @@ async function buildSubject(input, options) {
     return base;
   };
 
-  const fundamentals = fundamentalsResult.ok ? fundamentalsResult.data.rows.map(toFundamental) : [];
+  // 财报统一走 fin-data 的 financials 入口；`toMetricRow` 把它摊回本脚本历史字段。
+  const fundamentals = financialsResult.ok
+    ? (financialsResult.data.periods ?? []).map((period) => toFundamental(toMetricRow(period)))
+    : [];
   const annual = annualResult.ok ? annualResult.data.rows.map((row) => pick(row, ANNUAL_KEYS)) : [];
   const dividends = dividendsResult.ok ? dividendsResult.data.rows.map(toDividend) : [];
 
   for (const [label, result] of [
-    ['财务', fundamentalsResult],
+    ['财报', financialsResult],
     ['年报', annualResult],
     ['分红', dividendsResult],
   ]) {
@@ -316,6 +326,13 @@ async function buildSubject(input, options) {
     }
     warnings.push(`${label}数据不可用：${result.error.message}`);
   }
+
+  const financialsMock = financialsResult.ok && financialsResult.meta.mock === true;
+  if (financialsMock) {
+    warnings.unshift(
+      '财报为 fin-data 的模拟数据（source=mock），不是真实经营数据；本次定量结论只用于联调接口，不能作为投资依据。',
+    );
+  }
   if (instrument.market === 'hk') {
     if (dividendsResult.ok) {
       warnings.push('港股分红来自港交所派息公告解析（含除净日、派息日），宣派币种可能与实付币种不同，股息率已按 HKDCNY 折成港币。');
@@ -324,7 +341,7 @@ async function buildSubject(input, options) {
       '港股报表多以人民币列示、市值按港币计：穿透回报率按 HKDCNY 汇率换算，派息率按已解析公告的财年合计计算。',
     );
     if (fxResult?.ok !== true) warnings.push(`汇率不可用：${fxResult?.error?.message ?? 'unknown'}，穿透回报率不计算`);
-  } else if (fundamentalsResult.ok && fundamentals[0]?.currency !== null && fundamentals[0]?.currency !== 'CNY') {
+  } else if (financialsResult.ok && fundamentals[0]?.currency !== null && fundamentals[0]?.currency !== 'CNY') {
     warnings.push('非人民币报表，跨市场比较需换算。');
   }
 
@@ -333,16 +350,23 @@ async function buildSubject(input, options) {
   return {
     ok: true,
     fetchedAt: new Date().toISOString(),
-    source: {
-      quote: 'qt.gtimg.cn（腾讯行情快照）',
-      fundamentals:
-        instrument.market === 'hk'
-          ? 'datacenter.eastmoney.com RPT_HKF10_FN_MAININDICATOR'
-          : 'datacenter.eastmoney.com RPT_F10_FINANCE_MAINFINADATA',
-      dividends:
-        instrument.market === 'hk'
-          ? 'datacenter.eastmoney.com RPT_HKF10_FN_MAININDICATOR（DPS_HKD / DIVI_RATIO 快照）'
-          : 'datacenter.eastmoney.com RPT_SHAREBONUS_DET',
+    // provenance 全部来自 fin-data 的信封，不再写死来源字符串。
+    sources: {
+      quote: quoteResult.meta.source,
+      financials: financialsResult.ok ? financialsResult.meta.source : null,
+      annual: annualResult.ok ? annualResult.meta.source : null,
+      dividends: dividendsResult.ok ? dividendsResult.meta.source : null,
+      fx: fxResult?.ok === true ? fxResult.meta.source : null,
+    },
+    asOf: {
+      quote: quoteResult.meta.asOf,
+      financials: financialsResult.ok ? financialsResult.meta.asOf : null,
+      annual: annualResult.ok ? annualResult.meta.asOf : null,
+      dividends: dividendsResult.ok ? dividendsResult.meta.asOf : null,
+    },
+    dataQuality: {
+      financials: financialsResult.ok ? (financialsMock ? 'mock' : 'real') : 'unavailable',
+      financialsDisclaimer: financialsResult.ok ? (financialsResult.data.disclaimer ?? null) : null,
     },
     subject: {
       code: quoteResult.data.code,
@@ -365,19 +389,20 @@ async function buildSubject(input, options) {
 function printHelp() {
   process.stdout.write(
     [
-      'stock-data.mjs — 人格化个股分析的数据接地（A 股 / 港股行情）',
+      'stock-data.mjs — 人格化个股分析的数据接地（A 股 / 港股行情，取自 fin-data）',
       '',
       '  node .dsh/scripts/stock-data.mjs resolve <名称>     名称 -> 候选代码',
       '  node .dsh/scripts/stock-data.mjs quote <代码>       仅快照行情',
-      '  node .dsh/scripts/stock-data.mjs all <名称|代码>    行情 + 财务 + 分红 + 派生指标（默认）',
-      '  node .dsh/scripts/stock-data.mjs providers          列出已注册的数据源与能力',
+      '  node .dsh/scripts/stock-data.mjs all <名称|代码>    行情 + 财报 + 分红 + 派生指标（默认）',
+      '  node .dsh/scripts/stock-data.mjs providers          fin-data 查询入口自述',
       '',
       '选项：--periods <n>  取最近 n 期财报，默认 4（最多 8）',
       '',
       '代码写法：601318 / sh601318 / cn:601318 / hk:02318 / 02318',
-      '港股有行情、财务与年报；无分红明细，穿透回报率因跨币种返回 null。',
+      '港股有行情、财报与年报；无分红明细，穿透回报率因跨币种返回 null。',
       '',
       '输出为 JSON；取不到的字段一律 null，不做猜测。',
+      'dataQuality.financials = "mock" 表示财报为模拟数据（fin-data 接口联调用）。',
       '',
     ].join('\n'),
   );
@@ -397,7 +422,7 @@ async function main(argv) {
   const [command, target] = positional;
 
   if (command === 'providers') {
-    process.stdout.write(`${JSON.stringify({ ok: true, providers: listProviders() }, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify({ ok: true, ...describeFinData() }, null, 2)}\n`);
     return 0;
   }
 
@@ -407,7 +432,7 @@ async function main(argv) {
   }
 
   if (command === 'resolve') {
-    const result = await searchInstrument(target);
+    const result = await query({ kind: 'search', query: target });
     const candidates = result.ok ? result.data.candidates.map(mapCandidate) : [];
     process.stdout.write(`${JSON.stringify({ ok: result.ok, query: target, candidates }, null, 2)}\n`);
     return candidates.length === 0 ? 2 : 0;
@@ -416,7 +441,7 @@ async function main(argv) {
   if (command === 'quote') {
     const instrument = parseInstrument(target);
     if (instrument === undefined) throw new Error(`无法识别的代码：${target}`);
-    const result = await getQuote(instrument.key);
+    const result = await query({ kind: 'quote', instrument: instrument.key });
     if (!result.ok) throw new Error(`行情取数失败：${result.error.message}`);
     process.stdout.write(
       `${JSON.stringify({ ok: true, quote: pick(result.data, QUOTE_KEYS), meta: result.meta }, null, 2)}\n`,
