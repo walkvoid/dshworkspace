@@ -5,14 +5,14 @@
  * （或恰逢盘中变动）。
  *
  * 用法：
- *   node .dsh/scripts/verify-quotes.mjs
- *   node .dsh/scripts/verify-quotes.mjs 601318 000001
- *   node .dsh/scripts/verify-quotes.mjs 601318 --threshold 1
+ *   node .dsh/skills/fin-data/api/verify-quotes.mjs
+ *   node .dsh/skills/fin-data/api/verify-quotes.mjs 601318 000001
+ *   node .dsh/skills/fin-data/api/verify-quotes.mjs 601318 --threshold 1
  *
  * 退出码：0 全部在阈值内；1 存在超阈值偏差或取数失败。
  */
-import { get } from '../data/index.mjs';
-import { parseInstrument } from '../data/instruments.mjs';
+import { get } from '../adapter/index.mjs';
+import { parseInstrument } from '../adapter/instruments.mjs';
 
 /** 默认核对标的。 */
 const DEFAULT_CODES = ['601318', '600519'];

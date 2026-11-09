@@ -5,7 +5,7 @@
  *
  * 只覆盖**不依赖网络**的行为：请求校验、模拟财报的形状与确定性、
  * 本地日线的读取与口径、status 与 manifest 的一致性、财报 -> 指标行的回写。
- * 真实上游的行为由 `.dsh/data/test/contract.test.mjs`（fixtures）覆盖。
+ * 真实上游的行为由 `.dsh/skills/fin-data/adapter/test/contract.test.mjs`（fixtures）覆盖。
  */
 
 import assert from 'node:assert/strict';

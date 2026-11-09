@@ -2,7 +2,7 @@
 /**
  * 用 COS MCP Server 上传本地目录到腾讯云 COS。
  *
- *   node .dsh/scripts/cos-upload.mjs --dir .dsh/skills/9c/knowledge/docs --prefix 9c/docs
+ *   node .dsh/skills/9c/scripts/cos-upload.mjs --dir .dsh/skills/9c/knowledge/docs --prefix 9c/docs
  *
  * 凭据从环境变量或 --env-file 读：
  *   COS_REGION / COS_BUCKET / COS_SECRET_ID / COS_SECRET_KEY
@@ -20,7 +20,7 @@ const flag = (name, fallback = '') => {
 };
 
 if (has('help')) {
-  console.log(`用法：node .dsh/scripts/cos-upload.mjs --dir <local-dir> [--prefix 9c/docs] [--env-file .env-prep/cos-mcp.env] [--json]
+  console.log(`用法：node .dsh/skills/9c/scripts/cos-upload.mjs --dir <local-dir> [--prefix 9c/docs] [--env-file .env-prep/cos-mcp.env] [--json]
 凭据环境变量：COS_REGION / COS_BUCKET / COS_SECRET_ID / COS_SECRET_KEY`);
   process.exit(0);
 }

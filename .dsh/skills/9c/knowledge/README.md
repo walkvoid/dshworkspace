@@ -57,13 +57,13 @@ sync-state.json（上次最新视频日期）
 
 ```bash
 # 从 sync-state.json 的最后视频日期开始（第一次默认近 365 天，默认重叠 2 天）
-node scripts/bili-sync.mjs update
+node .dsh/skills/9c/scripts/bili-sync.mjs update
 
 # 视频多时先小批量
-node scripts/bili-sync.mjs update --limit 10
+node .dsh/skills/9c/scripts/bili-sync.mjs update --limit 10
 
 # 强制只存本地，不上传
-node scripts/bili-sync.mjs update --no-cos
+node .dsh/skills/9c/scripts/bili-sync.mjs update --no-cos
 ```
 
 `update` 会写回 `knowledge/sync-state.json`：
@@ -84,27 +84,27 @@ node scripts/bili-sync.mjs update --no-cos
 
 ## 视频 → 文档 → COS
 
-在**仓库根目录**执行（`scripts/bili-sync.mjs`）：
+在**仓库根目录**执行（`.dsh/skills/9c/scripts/bili-sync.mjs`，脚本就在 9c 技能里）：
 
 ```bash
 # 1. 拉近一年投稿，写 knowledge/sources.jsonl
-node scripts/bili-sync.mjs list --days 365
+node .dsh/skills/9c/scripts/bili-sync.mjs list --days 365
 
 # 1.1 或增量：从 sync-state.json 继续
-node scripts/bili-sync.mjs update --limit 20
+node .dsh/skills/9c/scripts/bili-sync.mjs update --limit 20
 
 # 2. 拉字幕，写 knowledge/transcripts/<bvid>.md
-node scripts/bili-sync.mjs subtitles --limit 20
+node .dsh/skills/9c/scripts/bili-sync.mjs subtitles --limit 20
 
 # 3. 生成文档 prompt；配置了 LLM 才直接生成 docs
-node scripts/bili-sync.mjs docs \
+node .dsh/skills/9c/scripts/bili-sync.mjs docs \
   --api-base https://api.deepseek.com/v1 --api-key "$LLM_API_KEY" --model deepseek-chat
 
 # 4. 上传 knowledge/docs/*.md 到 COS（没配置 COS 会自动跳过）
-node scripts/bili-sync.mjs upload --prefix 9c/docs
+node .dsh/skills/9c/scripts/bili-sync.mjs upload --prefix 9c/docs
 
 # 5. 看进度
-node scripts/bili-sync.mjs status
+node .dsh/skills/9c/scripts/bili-sync.mjs status
 ```
 
 - B 站接口需要外网；被拦时用 `--list-file` 导入另一台机器抓好的列表，或设置 `BILI_COOKIE`；

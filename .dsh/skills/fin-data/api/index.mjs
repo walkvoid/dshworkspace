@@ -10,7 +10,7 @@
  * 数据从哪来由 fin-data 决定，不写在调用方：
  * - `financials` 走「真实指标优先 + 模拟兜底」的财报适配器；
  * - `bars` 可读 fin-data 自己落盘的 CSV（不复权），也可走实时源；
- * - 其余 kind 复用 `.dsh/data/` 的适配器，但那是 fin-data 的内部实现，消费方不直接引用。
+ * - 其余 kind 复用 `.dsh/skills/fin-data/adapter/` 的适配器，但那是 fin-data 的内部实现，消费方不直接引用。
  *
  * 错误语义：
  * - 请求本身写错（未知 kind / 少 instrument / 非法标的）→ **抛 `QueryError`**；
@@ -19,8 +19,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { get, getMany, listProviders } from '../../../data/index.mjs';
-import { parseInstrument } from '../../../data/instruments.mjs';
+import { get, getMany, listProviders } from '../adapter/index.mjs';
+import { parseInstrument } from '../adapter/instruments.mjs';
 import { DATA_DIR, readLocalSeries, toBars } from './bars-local.mjs';
 import {
   ERROR_CODES,
@@ -36,7 +36,7 @@ import { queryUniverse } from './universe.mjs';
 export { ERROR_CODES, KINDS, QueryError, SCHEMA } from './contract.mjs';
 export { DATA_DIR, FIN_DATA_ROOT } from './bars-local.mjs';
 // 标的解析也由 fin-data 出口统一提供：9c 这类消费方不需要知道它底下是谁实现的。
-export { parseInstrument, toSecuCode } from '../../../data/instruments.mjs';
+export { parseInstrument, toSecuCode } from '../adapter/instruments.mjs';
 export { toMetricRow, periodFromMetricRow, FINANCIALS } from './financials.mjs';
 export { buildMockFinancials } from './mock-financials.mjs';
 export { UNIVERSE_IDS } from './universe.mjs';
@@ -102,7 +102,7 @@ function asOfOf(kind, data) {
 }
 
 /**
- * 其余 kind：交给 `.dsh/data/` 的适配器，再套上 fin-data 的信封。
+ * 其余 kind：交给 `.dsh/skills/fin-data/adapter/` 的适配器，再套上 fin-data 的信封。
  * @param {string} kind - data kind.
  * @param {object} request - query request.
  */

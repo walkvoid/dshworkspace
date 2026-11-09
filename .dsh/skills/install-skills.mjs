@@ -2,19 +2,18 @@
 /**
  * 把仓库里的技能安装到任意技能根目录。
  *
- * 目录约定：仓库根下只有一个 .dsh/，里面并列放着 skills / scripts / data / plugins。
- * 技能装到 <root>/<name> 之后，共享依赖按“与 skills 同级”解析（<root>/../scripts、
- * <root>/../data），所以 copy 模式会把这些共享目录一起铺到 <root>/..，装完不依赖仓库。
+ * 目录约定：每个技能都是自包含的——脚本在技能自己的 `scripts/` 里，数据在技能自己的
+ * `data/`（fin-data）里，没有与 skills 同级的共享目录。所以安装一个技能只需要复制/
+ * 链接它自己的目录，装完不依赖仓库。
  *
  * 两种模式：
  *   link  建目录联接/符号链接，指向仓库里的技能目录。改动即时生效，适合本机自用。
  *   copy  复制目录，并写入 repo.txt（仓库绝对路径），适合放到别处或给别的机器用。
  *
  * 用法：
- *   node .dsh/scripts/install-skills.mjs --root "C:\Users\me\.dsh\skills" --mode link
- *   node .dsh/scripts/install-skills.mjs --root "D:\other\.dsh\skills" --mode copy --force
- *   node .dsh/scripts/install-skills.mjs --root ... --skills 9c
- *   node .dsh/scripts/install-skills.mjs --root ... --mode copy --no-shared
+ *   node .dsh/skills/install-skills.mjs --root "C:\Users\me\.dsh\skills" --mode link
+ *   node .dsh/skills/install-skills.mjs --root "D:\other\.dsh\skills" --mode copy --force
+ *   node .dsh/skills/install-skills.mjs --root ... --skills 9c
  *
  * 退出码：0 全部就绪；1 有失败项。
  */
@@ -22,23 +21,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** 本脚本所在目录（<repo>/.dsh/scripts）。 */
+/** 本脚本所在目录（<repo>/.dsh/skills）。 */
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
-/** DSH 根目录：<repo>/.dsh，skills / scripts / data 都在它下面并列。 */
+/** DSH 根目录：<repo>/.dsh。 */
 const DSH_ROOT = path.resolve(HERE, '..');
 
-/** 仓库根目录（本脚本位于 <repo>/.dsh/scripts/）。 */
+/** 仓库根目录。 */
 const REPO_ROOT = path.resolve(DSH_ROOT, '..');
 
-/** 仓库内技能目录。 */
-const SKILLS_DIR = path.join(DSH_ROOT, 'skills');
-
-/** 与 skills 并列的共享目录；copy 模式会把它们铺到 <技能根>/..。 */
-const SHARED_DIRS = ['data', 'scripts'];
-
-/** 依赖共享目录的技能。新增这类技能时记得加进来。 */
-const SHARED_SKILLS = new Set(['9c', 'fin-data']);
+/** 仓库内技能目录就是本脚本所在目录。 */
+const SKILLS_DIR = HERE;
 
 /** 技能依赖：装左边的必须带上右边的（9c 只从 fin-data 的统一入口取数）。 */
 const DEPENDENCIES = { '9c': ['fin-data'] };
@@ -50,14 +43,13 @@ const DEFAULT_SKILLS = ['9c', 'fin-data'];
 const REPO_MARKER = 'repo.txt';
 
 function parseArgs(argv) {
-  const options = { root: '', mode: 'link', skills: DEFAULT_SKILLS, force: false, shared: true };
+  const options = { root: '', mode: 'link', skills: DEFAULT_SKILLS, force: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--root') options.root = argv[(index += 1)] ?? '';
     else if (arg === '--mode') options.mode = (argv[(index += 1)] ?? 'link').toLowerCase();
     else if (arg === '--skills') options.skills = String(argv[(index += 1)] ?? '').split(',').map((s) => s.trim()).filter(Boolean);
     else if (arg === '--force') options.force = true;
-    else if (arg === '--no-shared') options.shared = false;
   }
   return options;
 }
@@ -74,9 +66,8 @@ function usage() {
     '  --mode  link|copy  默认 link；copy 会写入 repo.txt 供技能定位仓库',
     `  --skills <a,b>   只装指定技能，默认 ${DEFAULT_SKILLS.join(',')}`,
     '  --force          目标已存在时删除后重装',
-    `  --no-shared      不铺共享目录（${SHARED_DIRS.join(' / ')}）`,
     '',
-    `  共享目录会铺到 <root>/..，即与技能目录同级；只有 ${[...SHARED_SKILLS].join(', ')} 需要它们。`,
+    '  每个技能自包含（脚本在自己 scripts/ 里），安装一个技能不再铺共享目录。',
   ];
   process.stdout.write(`${lines.join('\n')}\n`);
 }
@@ -150,8 +141,7 @@ function main() {
   }
 
   let root = path.resolve(options.root);
-  // 允许直接把 DSH 根（…/.dsh）交给 --root：技能落到 <root>/skills，
-  // 共享目录落到 <root>/data、<root>/scripts，和仓库里的结构一致。
+  // 允许直接把 DSH 根（…/.dsh）交给 --root：技能落到 <root>/skills。
   if (path.basename(root) === '.dsh') root = path.join(root, 'skills');
   if (!fs.existsSync(root)) fs.mkdirSync(root, { recursive: true });
 
@@ -189,31 +179,8 @@ function main() {
     }
   }
 
-  // 共享目录铺到 <root>/..：技能里的相对路径按“与 skills 同级”解析，仓库内和安装后是同一条。
-  const payloadRoot = path.resolve(root, '..');
-  const shared = [];
-  const needsShared = options.shared && requested.some((name) => SHARED_SKILLS.has(name));
-  if (needsShared) {
-    for (const dir of SHARED_DIRS) {
-      const source = path.join(DSH_ROOT, dir);
-      if (!fs.existsSync(source)) continue;
-      try {
-        shared.push({ dir, ...materialize(source, path.join(payloadRoot, dir), options) });
-      } catch (error) {
-        shared.push({ dir, status: 'failed', reason: error instanceof Error ? error.message : String(error) });
-      }
-    }
-  }
-
-  console.log(
-    JSON.stringify(
-      { repo: REPO_ROOT, root, payloadRoot, mode: options.mode, skills: requested, results, shared },
-      null,
-      2,
-    ),
-  );
-  const failed = results.filter((item) => item.status === 'failed').length
-    + shared.filter((item) => item.status === 'failed').length;
+  console.log(JSON.stringify({ repo: REPO_ROOT, root, mode: options.mode, skills: requested, results }, null, 2));
+  const failed = results.filter((item) => item.status === 'failed').length;
   process.exitCode = failed === 0 ? 0 : 1;
 }
 

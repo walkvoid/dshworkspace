@@ -8,7 +8,7 @@
  *   一份来源记录： `meta.source / meta.asOf / meta.fetchedAt / meta.mock / meta.stale`
  *
  * 真实上游（腾讯快照、东财 F10、iFinD）只是 fin-data 的内部适配器；消费方不得
- * 直接引用 `.dsh/data/`，否则换源、加缓存、接真实财报时又要改一遍调用方。
+ * 直接引用 `.dsh/skills/fin-data/adapter/`，否则换源、加缓存、接真实财报时又要改一遍调用方。
  */
 
 /** 信封版本。新增字段向后兼容；破坏性改动必须换版本号。 */

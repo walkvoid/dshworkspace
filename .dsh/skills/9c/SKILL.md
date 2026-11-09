@@ -30,14 +30,15 @@ COS 是可选的——没有 COS 时，视频文档与 claims 全部保存在本
 | `knowledge/compiled/active-claims.md` | 已审核的判例/边界规则（由 `knowledge/claims.jsonl` 生成） | 三因子落在阈值附近、行业特例、或需要历史判断时按需读 |
 | `knowledge/sync-state.json` | 上次同步到的最新视频日期 / 同步时间 | `/9c update` 判断增量起点时必读 |
 
-数据脚本在 `.dsh/scripts/stock-data.mjs`。**按下列顺序解析**（`scripts/` 与 `skills/` 同级，仓库内和安装后是同一条相对路径）：
+数据脚本在本技能自己的 `scripts/stock-data.mjs`（仓库内是 `.dsh/skills/9c/scripts/stock-data.mjs`）。
+**按下列顺序解析**：
 
-1. 本目录的 `../../scripts/stock-data.mjs` —— 仓库内，以及 copy 模式安装（安装器把 `scripts/`、`data/` 铺到技能目录的上级）都命中；
-2. 本目录下 `repo.txt` 指向的仓库根 `.dsh/scripts/stock-data.mjs` —— link 模式与旧安装的兜底；
+1. 本目录的 `scripts/stock-data.mjs` —— 仓库内与 copy/link 安装都是同一条相对路径；
+2. 本目录下 `repo.txt` 指向的仓库根 `.dsh/skills/9c/scripts/stock-data.mjs` —— 旧安装的兜底；
 3. 都不成立 → 告诉用户"找不到数据脚本"并请其确认仓库路径，**不要凭记忆编数字**。
 
 脚本的取数**只经过 fin-data 的统一入口**（`.dsh/skills/fin-data/api/`）：行情、财报、分红、汇率
-都在那里归一与记录来源，本技能不直接引用 `.dsh/data/`。**`fin-data` 技能必须一起安装。**
+都在那里归一与记录来源，本技能不直接引用 `.dsh/skills/fin-data/adapter/`。**`fin-data` 技能必须一起安装。**
 
 ## 二、执行流程（严格按顺序）
 
@@ -46,7 +47,7 @@ COS 是可选的——没有 COS 时，视频文档与 claims 全部保存在本
 从用户输入中取出股票名称或代码。输入含糊时（比如只给了行业），先用一句话确认，不要猜代码。
 
 ```bash
-node <本目录>/../../scripts/stock-data.mjs all "中国平安"
+node <本目录>/scripts/stock-data.mjs all "中国平安"
 ```
 
 脚本返回 JSON：`subject` / `quote` / `fundamentals` / `annual` / `dividends` / `derived`，
@@ -127,12 +128,12 @@ node <本目录>/../../scripts/stock-data.mjs all "中国平安"
 取数、归一化、缓存、失败回退、来源与新近度都由 fin-data 负责，脚本只负责"取什么"和"怎么算"。
 
 ```bash
-node .dsh/scripts/stock-data.mjs resolve 中国平安     # 名称 -> 候选代码
-node .dsh/scripts/stock-data.mjs quote 601318         # 仅行情
-node .dsh/scripts/stock-data.mjs all 中国平安          # 全量（默认）
-node .dsh/scripts/stock-data.mjs all 601318 --periods 6
-node .dsh/scripts/stock-data.mjs all hk:02318         # 港股：行情 + 财报 + 分红公告
-node .dsh/scripts/stock-data.mjs providers            # fin-data 入口自述
+node .dsh/skills/9c/scripts/stock-data.mjs resolve 中国平安     # 名称 -> 候选代码
+node .dsh/skills/9c/scripts/stock-data.mjs quote 601318         # 仅行情
+node .dsh/skills/9c/scripts/stock-data.mjs all 中国平安          # 全量（默认）
+node .dsh/skills/9c/scripts/stock-data.mjs all 601318 --periods 6
+node .dsh/skills/9c/scripts/stock-data.mjs all hk:02318         # 港股：行情 + 财报 + 分红公告
+node .dsh/skills/9c/scripts/stock-data.mjs providers            # fin-data 入口自述
 ```
 
 - 脚本输出里的 `sources` / `asOf` 直接来自 fin-data 的信封（`meta.source` / `meta.asOf`），
@@ -160,12 +161,12 @@ node .dsh/scripts/stock-data.mjs providers            # fin-data 入口自述
 
 ### 执行顺序
 
-1. 运行增量更新（脚本在 `.dsh/scripts/`，仓库内与安装后的 `<技能根>/../scripts` 同构）：
+1. 运行增量更新（脚本在本技能自己的 `scripts/`，仓库内即 `.dsh/skills/9c/scripts/`）：
 
    ```bash
-   node .dsh/scripts/bili-sync.mjs update
+   node .dsh/skills/9c/scripts/bili-sync.mjs update
    # 第一次没有 state，默认从近 365 天开始；默认重叠 2 天
-   # 视频很多时先小批量：node .dsh/scripts/bili-sync.mjs update --limit 10
+   # 视频很多时先小批量：node .dsh/skills/9c/scripts/bili-sync.mjs update --limit 10
    ```
 
    它会：
@@ -195,7 +196,7 @@ node .dsh/scripts/stock-data.mjs providers            # fin-data 入口自述
 
 4. 可选上传：配置了 `.env-prep/cos-mcp.env`（或已导出的 `COS_*` 环境变量）时，`update` 会自动上传；
    COS 的 MCP server（如果要装）是另一套配置，写在 profile 的 `cordis.patch.yml` 里，和上传凭据无关。
-   想强制只存本地就加 `--no-cos`；也可以单独跑 `node .dsh/scripts/bili-sync.mjs upload --prefix 9c/docs`。
+   想强制只存本地就加 `--no-cos`；也可以单独跑 `node .dsh/skills/9c/scripts/bili-sync.mjs upload --prefix 9c/docs`。
 
 ### 失败处理
 
@@ -210,11 +211,11 @@ node .dsh/scripts/stock-data.mjs providers            # fin-data 入口自述
 
 ```bash
 # 视频 → 文档 → COS（在仓库根，或安装后的技能根上级）
-node .dsh/scripts/bili-sync.mjs list --days 365
-node .dsh/scripts/bili-sync.mjs subtitles --limit 20
-node .dsh/scripts/bili-sync.mjs docs   # 无 LLM 时只生成 prompt
-node .dsh/scripts/bili-sync.mjs upload --prefix 9c/docs
-node .dsh/scripts/bili-sync.mjs status
+node .dsh/skills/9c/scripts/bili-sync.mjs list --days 365
+node .dsh/skills/9c/scripts/bili-sync.mjs subtitles --limit 20
+node .dsh/skills/9c/scripts/bili-sync.mjs docs   # 无 LLM 时只生成 prompt
+node .dsh/skills/9c/scripts/bili-sync.mjs upload --prefix 9c/docs
+node .dsh/skills/9c/scripts/bili-sync.mjs status
 
 # 在 .dsh/skills/9c：claim 校验 / 合并 / 编译
 cd .dsh/skills/9c

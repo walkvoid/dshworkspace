@@ -38,7 +38,7 @@ node .dsh/skills/fin-data/api/cli.mjs query --kind financials --code 600519 --so
   `options.source` 可取 `auto`（默认）/ `real` / `mock`。模拟数据只用于联调，不能当真实经营数据；
 - `bars` 默认走实时源（前复权）；`source: 'local'` 读本技能落盘的 CSV（**不复权**），
   `meta.adjust` 会写明 `none`；
-- `.dsh/data/` 是入口的内部适配器，**消费方不得直接引用**。
+- `.dsh/skills/fin-data/adapter/` 是入口的内部适配器，**消费方不得直接引用**。
 
 ## 数据在哪
 
@@ -97,7 +97,7 @@ node .dsh/skills/fin-data/api/cli.mjs query --kind bars --code 600519 --source l
 5. iFinD 数据只用于本地校验，不写入公开数据文件。
 6. **模拟财报必须标注**：`financials` 的 `meta.mock = true` 时，说明"财报为模拟数据，
    仅用于联调接口"，不得当作真实经营数据下结论。
-7. **消费方只走 `api/`**：9c、金融看板及任何脚本都不得直接 `import` `.dsh/data/`；
+7. **消费方只走 `api/`**：9c、金融看板及任何脚本都不得直接 `import` `.dsh/skills/fin-data/adapter/`；
    换源、加缓存、接真实财报都只改 fin-data 内部。
 
 ## 维护（改数据后）

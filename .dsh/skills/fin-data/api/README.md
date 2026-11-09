@@ -6,14 +6,14 @@
 ```
 消费方                         入口                                 实现
 ──────────────────────────    ────────────────────────────────    ────────────────────────────────
-9c  .dsh/scripts/stock-data.mjs ─┐
+9c  .dsh/skills/9c/scripts/stock-data.mjs ─┐
 金融看板 index.js / picks.js  ───┼─▶ skills/fin-data/api/index.mjs ─┬─▶ financials.mjs（真实指标 + 模拟财报）
 agent / shell（CLI）          ───┘   （query / queryMany / describe）├─▶ universe.mjs（sse50 / 港股通）
                                                                     ├─▶ bars-local.mjs（本仓 CSV，不复权）
-                                                                    └─▶ .dsh/data/（腾讯/东财适配器，内部实现）
+                                                                    └─▶ .dsh/skills/fin-data/adapter/（腾讯/东财适配器，内部实现）
 ```
 
-`.dsh/data/` 仍然是真实上游的适配器，但它**只允许被 fin-data 引用**；谁要行情、财报、汇率，
+`.dsh/skills/fin-data/adapter/` 仍然是真实上游的适配器，但它**只允许被 fin-data 引用**；谁要行情、财报、汇率，
 一律走本入口。
 
 ## 1. 怎么调
@@ -238,18 +238,17 @@ const row = toMetricRow(period);   // revenueYi / netProfitYi / ocfYi / netCashY
 
 ## 5. 依赖与安装
 
-- 入口依赖同仓的 `.dsh/data/`（底层适配器）与 fin-data 自己的 `data/`（日线 CSV）；
-  相对路径 `../../../data` 在仓库内与「技能装到 `<dsh>/skills/`、共享目录铺到 `<dsh>/data/`」
-  两种布局下是同一条。
-- 金融看板通过 `../../skills/fin-data/api/index.mjs` 引用；9c 通过 `../skills/fin-data/api/index.mjs`
-  （`stock-data.mjs` 位于 `<dsh>/scripts/`）。
-- **装 9c 或看板时，fin-data 必须一起在位**；方向是单向的：消费方 → fin-data → `.dsh/data/`。
+- 入口依赖同目录的 `../adapter/`（底层适配器）与 fin-data 自己的 `data/`（日线 CSV），两者都在 fin-data 技能目录内部，
+  不再有与 `skills/` 同级的共享目录。
+- 金融看板通过 `../../skills/fin-data/api/index.mjs` 引用；9c 的 `stock-data.mjs` 位于
+  `.dsh/skills/9c/scripts/`，通过 `../../fin-data/api/index.mjs` 引用。
+- **装 9c 或看板时，fin-data 必须一起在位**；方向是单向的：消费方 → fin-data → `adapter/`。
 
 ## 6. 测试
 
 ```powershell
 node --test .dsh/skills/fin-data/api/test/query.test.mjs    # 离线契约：10 项
-node --test .dsh/data/test/contract.test.mjs                # 底层适配器 fixtures
-node .dsh/scripts/stock-data.mjs all 中国平安                # 9c 取数（需要网络）
+node --test .dsh/skills/fin-data/adapter/test/contract.test.mjs                # 底层适配器 fixtures
+node .dsh/skills/9c/scripts/stock-data.mjs all 中国平安                # 9c 取数（需要网络）
 node .dsh/plugins/financial-dashboard/scripts/test-route.mjs # 看板行情路由（需要网络）
 ```

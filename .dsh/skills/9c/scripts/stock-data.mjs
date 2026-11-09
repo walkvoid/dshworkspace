@@ -3,14 +3,14 @@
  * 人格化个股分析的数据接地脚本（A 股 / 港股），取自 **fin-data 的统一查询入口**。
  *
  * 取数、归一、缓存、降级、来源与新近度全部由 `fin-data/api` 负责；
- * 本脚本只做「取什么」和「怎么算」，不再直接引用 `.dsh/data/`。
+ * 本脚本只做「取什么」和「怎么算」，不再直接引用 fin-data 的 `adapter/` 内部实现。
  *
  * 用法：
- *   node .dsh/scripts/stock-data.mjs resolve 中国平安
- *   node .dsh/scripts/stock-data.mjs quote 601318
- *   node .dsh/scripts/stock-data.mjs all 中国平安
- *   node .dsh/scripts/stock-data.mjs all hk:02318         # 港股：行情 + 财报 + 分红公告
- *   node .dsh/scripts/stock-data.mjs providers            # fin-data 入口自述
+ *   node .dsh/skills/9c/scripts/stock-data.mjs resolve 中国平安
+ *   node .dsh/skills/9c/scripts/stock-data.mjs quote 601318
+ *   node .dsh/skills/9c/scripts/stock-data.mjs all 中国平安
+ *   node .dsh/skills/9c/scripts/stock-data.mjs all hk:02318         # 港股：行情 + 财报 + 分红公告
+ *   node .dsh/skills/9c/scripts/stock-data.mjs providers            # fin-data 入口自述
  *
  * 输出：单个 JSON 到 stdout。取不到的字段一律 null，不做猜测。
  * `dataQuality.financials === "mock"` 时，财报为 fin-data 的模拟数据，不能当作真实经营数据。
@@ -21,7 +21,7 @@ import {
   query,
   toMetricRow,
   toSecuCode,
-} from '../skills/fin-data/api/index.mjs';
+} from '../../fin-data/api/index.mjs';
 
 /** 输出里保留的行情字段（与改造前逐字段一致）。 */
 const QUOTE_KEYS = [
@@ -391,10 +391,10 @@ function printHelp() {
     [
       'stock-data.mjs — 人格化个股分析的数据接地（A 股 / 港股行情，取自 fin-data）',
       '',
-      '  node .dsh/scripts/stock-data.mjs resolve <名称>     名称 -> 候选代码',
-      '  node .dsh/scripts/stock-data.mjs quote <代码>       仅快照行情',
-      '  node .dsh/scripts/stock-data.mjs all <名称|代码>    行情 + 财报 + 分红 + 派生指标（默认）',
-      '  node .dsh/scripts/stock-data.mjs providers          fin-data 查询入口自述',
+      '  node .dsh/skills/9c/scripts/stock-data.mjs resolve <名称>     名称 -> 候选代码',
+      '  node .dsh/skills/9c/scripts/stock-data.mjs quote <代码>       仅快照行情',
+      '  node .dsh/skills/9c/scripts/stock-data.mjs all <名称|代码>    行情 + 财报 + 分红 + 派生指标（默认）',
+      '  node .dsh/skills/9c/scripts/stock-data.mjs providers          fin-data 查询入口自述',
       '',
       '选项：--periods <n>  取最近 n 期财报，默认 4（最多 8）',
       '',

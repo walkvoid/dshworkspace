@@ -15,7 +15,7 @@
  * 金额单位统一为**元**；比率字段保留百分数或 0~1 小数（见字段名）。
  */
 
-import { get } from '../../../data/index.mjs';
+import { get } from '../adapter/index.mjs';
 import {
   ERROR_CODES,
   FINANCIALS_SOURCES,

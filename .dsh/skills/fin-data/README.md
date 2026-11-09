@@ -30,13 +30,13 @@ node api/cli.mjs query --kind bars --code 600519 --source local --limit 120
 - kind：`status` / `quote` / `bars` / `financials` / `dividends` / `annual` / `universe` / `fx` / `search` / `announcements`；
 - 财报（`financials`）：真实指标优先，取不到回落**模拟数据**（`meta.mock: true`）；`source` 可取 `auto`/`real`/`mock`；
 - `bars` 默认实时源（前复权）；`source: 'local'` 读本仓 CSV（不复权，`meta.adjust = 'none'`）；
-- `.dsh/data/` 只是入口的内部适配器，消费方不要直接引用。
+- `.dsh/skills/fin-data/adapter/` 只是入口的内部适配器，消费方不要直接引用。
 
 ## 安装
 
 ```powershell
 # 在本仓库中（推荐 link 模式，修改即时生效）
-node .dsh/scripts/install-skills.mjs --root "$env:USERPROFILE\.dsh\skills" --mode link --skills fin-data
+node .dsh/skills/install-skills.mjs --root "$env:USERPROFILE\.dsh\skills" --mode link --skills fin-data
 
 # 依赖（Python 3.11）
 cd .dsh/skills/fin-data

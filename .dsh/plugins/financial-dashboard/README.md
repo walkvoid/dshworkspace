@@ -78,7 +78,7 @@ GET /financial-dashboard/picks?history=1    # 历史日期列表
 取数**只经过 fin-data 技能的统一查询入口** `../../skills/fin-data/api/index.mjs`
 （行情 / 财报 / 分红 / 汇率都在那里归一，契约见 `fin-data/api/README.md`）。
 本插件通过相对路径引用它：安装时是指向本目录的 junction，因此 **`.dsh/skills/fin-data/` 必须与它一起在位**，
-`.dsh/data/` 也随仓库一起（它是 fin-data 的内部适配器）。
+`.dsh/skills/fin-data/adapter/` 也随仓库一起（它是 fin-data 的内部适配器）。
 
 ## Host 路由
 

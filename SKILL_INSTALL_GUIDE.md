@@ -24,9 +24,9 @@ https://raw.githubusercontent.com/walkvoid/dshworkspace/main/SKILL_INSTALL_GUIDE
 | 需求分析 | 技能（1 个目录） | 「Java 程序员技能包」第 3 个模块 `/java-requirement-analysis`：按业务域与技术大类双维度把需求文档拆成子需求、代码锚点、新增类/方法与估时，并列出澄清问题 | Java 项目装 |
 | iFinD 数据源 | 第三方技能（可选） | 同花顺 MCP，提供行情兜底与交叉校验 | 可选，需密钥 |
 
-史诗级韭菜技能依赖 `.dsh/scripts/` 和 `.dsh/data/`（两千多行）。`install-skills.mjs` 的 **copy 模式会把这两个目录
-一起铺到 `<技能根>/..`**（与 `skills/` 同级），所以装完不需要仓库留在磁盘上；link 模式是指向仓库的联接，改仓库即时生效。
-`java-env-prep` 是自包含的（逻辑都在技能目录自己的 `scripts/` 里），但它同样从仓库安装、同样留在技能根目录下。
+史诗级韭菜技能是自包含的：取数脚本在 `.dsh/skills/9c/scripts/`，统一取数入口与底层适配器都在
+`.dsh/skills/fin-data/` 里。`install-skills.mjs` 只复制/链接技能目录本身，**装完不需要仓库留在磁盘上**；
+link 模式是指向仓库的联接，改仓库即时生效。`java-env-prep` 同样是自包含的（逻辑都在技能目录自己的 `scripts/` 里）。
 
 ### 技能清单：用户点谁就装谁
 
@@ -126,7 +126,7 @@ Expand-Archive "$env:TEMP\dshworkspace.zip" "$env:TEMP\dshworkspace" -Force
 # 解压后目录名带 -main，重命名为 dshworkspace 再移走
 ```
 
-**成功判定**：`<仓库路径>/.dsh/scripts/stock-data.mjs`、`<仓库路径>/.dsh/skills/9c/SKILL.md`
+**成功判定**：`<仓库路径>/.dsh/skills/9c/scripts/stock-data.mjs`、`<仓库路径>/.dsh/skills/9c/SKILL.md`
 与 `<仓库路径>/.dsh/skills/fin-data/api/index.mjs` 都存在。
 
 ---
@@ -146,53 +146,56 @@ Expand-Archive "$env:TEMP\dshworkspace.zip" "$env:TEMP\dshworkspace" -Force
 然后运行仓库自带的安装脚本，**不要手工复制**：
 
 ```bash
-node "<仓库路径>/.dsh/scripts/install-skills.mjs" --root "~/.dsh/skills" --mode copy
+node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "~/.dsh/skills" --mode copy
 ```
 
 - `--mode copy`：复制技能并写入 `repo.txt`（仓库绝对路径），换机器、换目录都能跑；
 - `--mode link`：建目录联接/符号链接，指向仓库，改仓库即时生效（本机自用更省事）；
 - `--skills <a,b>`：只装指定技能（逗号分隔）。**默认只装 `9c` + `fin-data`**（9c 依赖 fin-data 的取数入口，
   脚本会自动补上），装 Java 环境准备要显式指定（见第 2.5 步）；
-- `--force`：目标已存在时覆盖；
-- `--no-shared`：不铺共享目录。**默认会铺** `.dsh/data/` 与 `.dsh/scripts/` 到 `<技能根>/..`，`9c` 与 `fin-data` 需要它们。
+- `--force`：目标已存在时覆盖。
+
+每个技能都是自包含的：脚本在 `<技能>/scripts/`，数据在 `<技能>/data/`，安装器不再铺任何共享目录。
 
 **只装用户点名的技能**（比如"安装史诗级韭菜"）——在命令后面补 `--skills`：
 
 ```bash
-node "<仓库路径>/.dsh/scripts/install-skills.mjs" --root "<技能根目录>" --mode copy --skills 9c
+node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<技能根目录>" --mode copy --skills 9c
 ```
 
 装 `9c` 时脚本会自动把 `fin-data` 一起装上（`skills` 字段里能看到两项），这是唯一允许的"多装"：
 9c 的行情/财报只从 fin-data 的统一入口取，缺了它 `stock-data.mjs` 起不来。
 
-**安装后的结构**——装 `9c` 时应该和仓库一模一样，`.dsh/` 下是三个并列目录：
+**安装后的结构**——每个技能各自独立，`.dsh/skills/` 下没有共享层：
 
 ```text
-<技能根目录>/..            ← 通常是 ~/.dsh 或 <项目根>/.dsh
-├── data/                  底层适配器（只被 fin-data 引用）：index / instruments / policy / providers / test
-├── scripts/               9c 用到的全部脚本：stock-data / bili-sync / cos-upload / verify-quotes …
-└── skills/
-    ├── 9c/                SKILL.md + persona / framework / style / eval + scripts/knowledge.mjs
-    └── fin-data/          日线数据 + api/（统一取数入口：query / financials / cli）+ findata/
+<技能根目录>/
+├── 9c/
+│   ├── SKILL.md + persona / framework / style / eval
+│   └── scripts/           stock-data / bili-sync / cos-upload / cos-mcp-smoke / knowledge
+└── fin-data/
+    ├── SKILL.md
+    ├── api/               统一取数入口：query / financials / cli / verify-quotes
+    ├── adapter/           内部适配器（只被 api 引用）：index / instruments / policy / providers / test
+    ├── data/              上证 50 种子日线
+    └── findata/           Python 同步工具
 ```
 
-`knowledge.mjs` 留在技能自己的 `scripts/` 里：它管的是技能内的 `knowledge/`，不属于共享层。
-
 **成功判定**：`results[].status` 为 `copied` / `linked` / `in-place`，装 `9c` 时 `results` 里同时有
-`9c` 与 `fin-data`、`shared` 两条都是 `copied`，并且下面这些路径全部存在：
+`9c` 与 `fin-data`，并且下面这些路径全部存在：
 
 ```text
 <技能根目录>/9c/SKILL.md
 <技能根目录>/9c/scripts/knowledge.mjs
+<技能根目录>/9c/scripts/stock-data.mjs
+<技能根目录>/9c/scripts/bili-sync.mjs
 <技能根目录>/fin-data/SKILL.md
 <技能根目录>/fin-data/api/index.mjs
-<技能根目录>/../data/index.mjs
-<技能根目录>/../scripts/stock-data.mjs
-<技能根目录>/../scripts/bili-sync.mjs
+<技能根目录>/fin-data/adapter/index.mjs
 ```
 
-再补一条实测：`node "<技能根目录>/../scripts/stock-data.mjs" quote 601318` 能返回 `ok: true`，
-说明「9c → fin-data → 共享适配器」这条链在安装后仍能互通。
+再补一条实测：`node "<技能根目录>/9c/scripts/stock-data.mjs" quote 601318` 能返回 `ok: true`，
+说明「9c → fin-data → 适配器」这条链在安装后仍能互通。
 
 **失败处理**：`status: failed` 时会带原因——目标已存在就加 `--force`；技能不存在说明仓库不完整，回到第 1 步。
 
@@ -210,7 +213,7 @@ node "<仓库路径>/.dsh/scripts/install-skills.mjs" --root "<技能根目录>"
 **不用另选目录**——复用第 2 步定下的同一个技能根目录，只是多给一个 `--skills`：
 
 ```bash
-node "<仓库路径>/.dsh/scripts/install-skills.mjs" --root "<技能根目录>" --skills java-env-prep --mode copy
+node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<技能根目录>" --skills java-env-prep --mode copy
 ```
 
 > 安装脚本的默认技能列表是 `9c` + `fin-data`，**漏掉 `--skills java-env-prep` 就装不到它**。
@@ -411,7 +414,7 @@ DSH（有 `ask_user_question` 工具）直接这样问：
    确认 `mcp_config.json` 存在。
 
    > 装到用户级（`~/.dsh/skills`）或仓库内（`<仓库>/.dsh/skills`）都可以——
-   > `data` 层的 `.dsh/data/providers/ifind.mjs` 会依次查找 `IFIND_SKILL_DIR`、仓库的 `.dsh/skills`、`~/.dsh/skills`、
+   > `data` 层的 `.dsh/skills/fin-data/adapter/providers/ifind.mjs` 会依次查找 `IFIND_SKILL_DIR`、仓库的 `.dsh/skills`、`~/.dsh/skills`、
    > `~/.agents/skills`、`~/.config/agents/skills`、`~/.claude/skills`，命中哪个用哪个。
    > 需要指定其他位置时设置环境变量 `IFIND_SKILL_DIR`。
 
@@ -441,20 +444,20 @@ DSH（有 `ask_user_question` 工具）直接这样问：
 
 ```bash
 # 1) 取数入口能出数（A 股；9c 与看板走的是同一个入口）
-node "<仓库路径>/.dsh/scripts/stock-data.mjs" all 中国平安
+node "<仓库路径>/.dsh/skills/9c/scripts/stock-data.mjs" all 中国平安
 
 # 2) 港股分红（公告解析，能出除净日）
-node "<仓库路径>/.dsh/scripts/stock-data.mjs" all hk:02318
+node "<仓库路径>/.dsh/skills/9c/scripts/stock-data.mjs" all hk:02318
 
 # 3) 契约测试（入口 8 项 + 适配器 24 项，均离线）
 node --test "<仓库路径>/.dsh/skills/fin-data/api/test/query.test.mjs"
-node --test "<仓库路径>/.dsh/data/test/contract.test.mjs"
+node --test "<仓库路径>/.dsh/skills/fin-data/adapter/test/contract.test.mjs"
 
 # 4) 财报接口（真实优先；没有真实源时回落模拟数据，自己会标 mock）
 node "<仓库路径>/.dsh/skills/fin-data/api/cli.mjs" query --kind financials --code 600519 --periods 4
 
 # 5) 接入 iFinD 后，双源核对
-node "<仓库路径>/.dsh/scripts/verify-quotes.mjs"
+node "<仓库路径>/.dsh/skills/fin-data/api/verify-quotes.mjs"
 
 # 6) 装了 Java 环境准备时，脚本能跑起来（无参数打印用法，退出码 1 属正常）
 node "<技能根目录>/java-env-prep/scripts/env-prep.mjs"
@@ -545,7 +548,7 @@ node "<技能根目录>/java-env-prep/scripts/env-prep.mjs"
 | 看板空白 / 无数据 | 插件 host 侧改动需重启 DSH；确认 `fin-data` 技能在位（看板的取数入口）、能访问 `qt.gtimg.cn` |
 | iFinD 自检 401 | 密钥不完整或过期，重新获取 |
 | iFinD 自检 403 | 安装成功但账号权益不足，不是安装问题 |
-| iFinD 装了但行情仍走腾讯 | provider 没找到技能目录：把包放到 `<仓库>/.dsh/skills/`，或设 `IFIND_SKILL_DIR` 指向它，再跑 `node "<仓库>/.dsh/scripts/verify-quotes.mjs"` 确认 |
+| iFinD 装了但行情仍走腾讯 | provider 没找到技能目录：把包放到 `<仓库>/.dsh/skills/`，或设 `IFIND_SKILL_DIR` 指向它，再跑 `node "<仓库>/.dsh/skills/fin-data/api/verify-quotes.mjs"` 确认 |
 | 行情全失败 | 先跑第 5 步第 1 项定位是上游网络还是代码问题 |
 
 ---

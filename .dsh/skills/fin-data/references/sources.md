@@ -15,7 +15,7 @@ akshare → adata → iFinD（仅抽样校验，不写主数据） → web（东
 | adata | 预留 | 日线/复权 | — | 尚未接入（M2） |
 | iFinD | 预留（MCP） | 日频需 NL 查询 | 配额 | 仅做抽样校验，不写主数据，避免许可与解析稳定性问题 |
 | 东方财富直连 | `sources/web_source.py` | 日线（`push2his`，`fqt=0` 不复权） | 500ms/次 | `secid`：沪 `1.`，深/北 `0.`；成交量「手」→ ×100 |
-| 腾讯直连 | 预留 | 日线 | — | 现有 `.dsh/data/providers/tencent.mjs` 已实现，可移植 |
+| 腾讯直连 | 预留 | 日线 | — | 现有 `.dsh/skills/fin-data/adapter/providers/tencent.mjs` 已实现，可移植 |
 
 ## 校验与除权
 

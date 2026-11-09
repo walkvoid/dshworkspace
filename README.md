@@ -11,7 +11,7 @@ DeepSeek Harness（DSH）的插件与技能集合：一块能用的**金融看�
 | A 股日线数据 | 技能 + 数据（`.dsh/skills/fin-data/`） | `/fin-data` |
 | Java 环境准备 | 技能（`.dsh/skills/java-env-prep/`） | `/java-env-prep`、`/环境准备` |
 | 项目导览 | 技能（`.dsh/skills/java-project-tour/`） | `/java-project-tour`、`/代码地图` |
-| 数据层 | `fin-data` 技能的统一查询入口（`.dsh/skills/fin-data/api/`）+ 内部适配器 `.dsh/data/` | 以上内容共用 |
+| 数据层 | `fin-data` 技能的统一查询入口（`.dsh/skills/fin-data/api/`）+ 内部适配器 `.dsh/skills/fin-data/adapter/` | 以上内容共用 |
 
 ---
 
@@ -50,7 +50,7 @@ git clone https://github.com/walkvoid/dshworkspace.git "$env:USERPROFILE\.dsh\re
 
 ```powershell
 $repo = "$env:USERPROFILE\.dsh\repos\dshworkspace"
-node "$repo\.dsh\scripts\install-skills.mjs" --root "$env:USERPROFILE\.dsh\skills" --mode copy --skills 9c
+node "$repo\.dsh\skills\install-skills.mjs" --root "$env:USERPROFILE\.dsh\skills" --mode copy --skills 9c
 ```
 
 | 参数 | 作用 |
@@ -58,12 +58,11 @@ node "$repo\.dsh\scripts\install-skills.mjs" --root "$env:USERPROFILE\.dsh\skill
 | `--root` | 技能根目录：用户级 `~/.dsh/skills`，项目级 `<项目根>/.dsh/skills`；也可以直接给 `~/.dsh`，自动落到其 `skills/` |
 | `--mode copy` | 复制目录并写 `repo.txt`（仓库绝对路径），换机器、换目录都能跑 |
 | `--mode link` | 建目录联接指向仓库，改仓库即时生效（本机自用更省事） |
-| `--skills` | 只装指定技能，逗号分隔；不带则只装默认列表（当前 `9c`） |
+| `--skills` | 只装指定技能，逗号分隔；不带则装默认列表（当前 `9c`、`fin-data`） |
 | `--force` | 目标已存在时覆盖 |
-| `--no-shared` | 不铺共享目录（默认会铺 `data/` 与 `scripts/`） |
 
-`copy` 模式除了技能目录，还会把 `.dsh/data/` 和 `.dsh/scripts/` 铺到 `<技能根>/..`（即与技能目录同级）。
-这样技能里的 `../../scripts/stock-data.mjs` 在仓库内和安装后是同一条相对路径——**装完不需要仓库留在盘上**。
+每个技能都是**自包含**的：脚本在技能自己的 `scripts/` 里（`9c/scripts/stock-data.mjs` 等），
+数据在 `fin-data/data/` 里，安装器只复制/链接技能目录本身，装完不依赖仓库留在盘上。
 
 **看板**（仅 DSH）：让 Agent 调 `plugin_manager` 的 `install_bundle`，`target` 指到
 `<仓库路径>/.dsh/plugins/financial-dashboard`（含 `package.json` 的那层），返回 `application: applied` 后刷新 Web GUI。
@@ -73,9 +72,9 @@ node "$repo\.dsh\scripts\install-skills.mjs" --root "$env:USERPROFILE\.dsh\skill
 **验证**：
 
 ```powershell
-node "$repo\.dsh\scripts\stock-data.mjs" all 中国平安   # 返回 "ok": true 且 quote.price 是数字
+node "$repo\.dsh\skills\9c\scripts\stock-data.mjs" all 中国平安   # 返回 "ok": true 且 quote.price 是数字
 node --test "$repo\.dsh\skills\fin-data\api\test\query.test.mjs"  # 入口离线契约（10 项）
-node --test "$repo\.dsh\data\test\contract.test.mjs"   # 适配器离线契约（24 项）
+node --test "$repo\.dsh\skills\fin-data\adapter\test\contract.test.mjs"   # 适配器离线契约（24 项）
 ```
 
 **更新**：仓库根 `git pull` → 重启 DSH → 刷新页面。
@@ -118,11 +117,11 @@ A/H 分开算。人格资产（`persona.md` / `framework.md` / `style.md` / `eva
 视频 → 文档 → COS 的流水线：
 
 ```bash
-node .dsh/scripts/bili-sync.mjs update            # 从上次同步日期增量更新
-node .dsh/scripts/bili-sync.mjs list --days 365   # 或首次全量
-node .dsh/scripts/bili-sync.mjs subtitles --limit 20
-node .dsh/scripts/bili-sync.mjs docs --api-base https://api.deepseek.com/v1 --api-key "$LLM_API_KEY"
-node .dsh/scripts/bili-sync.mjs upload --prefix 9c/docs
+node .dsh/skills/9c/scripts/bili-sync.mjs update            # 从上次同步日期增量更新
+node .dsh/skills/9c/scripts/bili-sync.mjs list --days 365   # 或首次全量
+node .dsh/skills/9c/scripts/bili-sync.mjs subtitles --limit 20
+node .dsh/skills/9c/scripts/bili-sync.mjs docs --api-base https://api.deepseek.com/v1 --api-key "$LLM_API_KEY"
+node .dsh/skills/9c/scripts/bili-sync.mjs upload --prefix 9c/docs
 ```
 
 `/9c update` 就是 `update` 那条维护流程；**COS 不是必需的**，没配置 COS 时文档只落本地
@@ -135,9 +134,9 @@ node .dsh/scripts/bili-sync.mjs upload --prefix 9c/docs
 数据脚本可以单独跑：
 
 ```powershell
-node .dsh/scripts/stock-data.mjs all 中国平安
-node .dsh/scripts/stock-data.mjs resolve 贵州茅台
-node .dsh/scripts/stock-data.mjs all hk:02318      # 港股：行情 + 派息公告解析
+node .dsh/skills/9c/scripts/stock-data.mjs all 中国平安
+node .dsh/skills/9c/scripts/stock-data.mjs resolve 贵州茅台
+node .dsh/skills/9c/scripts/stock-data.mjs all hk:02318      # 港股：行情 + 派息公告解析
 ```
 
 ### 2.3 Java 环境准备（`/java-env-prep`、`/环境准备`）
@@ -224,7 +223,7 @@ node .dsh/skills/java-requirement-analysis/scripts/req.mjs validate .requirement
 
 ### 2.6 iFinD 数据源（可选）
 
-同花顺 MCP，给行情做兜底与交叉校验；不接也能正常用（行情走腾讯）。接入后 `.dsh/data/providers/ifind.mjs`
+同花顺 MCP，给行情做兜底与交叉校验；不接也能正常用（行情走腾讯）。接入后 `.dsh/skills/fin-data/adapter/providers/ifind.mjs`
 把官方技能包的 `call-node.js` 包成 provider，只吃结构化快照（`stock_highfreq_quotes` 的 `real_time`）。
 技能目录按 `IFIND_SKILL_DIR` → 仓库 → `~/.dsh/skills` → `~/.agents/skills` → … 的顺序查找。
 装法、密钥与自检见安装引导第 4 步。
@@ -268,20 +267,20 @@ node .dsh/skills/java-requirement-analysis/scripts/req.mjs validate .requirement
 ## 3. 仓库结构
 
 ```text
-.dsh/                              仓库里只有这一个 .dsh，插件 / 技能 / 数据层都在它下面
+.dsh/                              仓库里只有这一个 .dsh，插件 / 技能都在它下面
 .dsh/plugins/financial-dashboard/  看板插件（bundle 根，含 package.json / cordis.patch.yml）
+.dsh/skills/install-skills.mjs     安装器（装技能，不再需要共享目录）
 .dsh/skills/9c/                    人格技能：SKILL.md + persona / framework / style / eval
+.dsh/skills/9c/scripts/            stock-data / bili-sync / cos-upload / cos-mcp-smoke / knowledge
 .dsh/skills/java-env-prep/         环境准备技能：SKILL.md + scripts/env-prep.mjs + references/
 .dsh/skills/java-project-tour/     项目导览技能：SKILL.md + scripts/tour.mjs + references/schema.md
 .dsh/skills/java-requirement-analysis/ 需求分析技能：SKILL.md + scripts/req.mjs + references/change-taxonomy.md
-.dsh/skills/fin-data/              A 股日线技能 + 统一取数入口：findata/ + data/（上证50 种子集）+ api/
-.dsh/scripts/                      取数与安装 CLI：install-skills / stock-data / bili-sync / verify-quotes
-.dsh/data/                         底层适配器（只被 fin-data 引用）：index / policy / instruments / cache / providers
+.dsh/skills/fin-data/              A 股日线技能 + 统一取数入口：findata/ + data/（上证50 种子集）+ api/ + adapter/
 SKILL_INSTALL_GUIDE.md             写给 Agent 的安装引导（支持点名只装某一块）
 ```
 
-**关键约定**：`scripts/` 和 `data/` 与 `skills/` **同级**。技能里按 `../../scripts/stock-data.mjs` 解析，
-仓库内与 copy 安装后（安装器把这两层铺到 `<技能根>/..`）是同一条相对路径，不需要环境变量。
+**关键约定**：每个技能自包含——脚本在 `<skill>/scripts/` 下，数据在 `<skill>/data/` 下，
+技能之间不共享目录。`fin-data` 的内部适配器在 `.dsh/skills/fin-data/adapter/`，只被 fin-data 的 `api/` 引用。
 
 ---
 
@@ -291,7 +290,7 @@ SKILL_INSTALL_GUIDE.md             写给 Agent 的安装引导（支持点名�
 `api/cli.mjs`（命令行外壳），契约 `fin-data.query/v1`，字段说明见
 [`.dsh/skills/fin-data/api/README.md`](./.dsh/skills/fin-data/api/README.md)。
 
-9c 与金融看板都只从这一个入口取数；`.dsh/data/` 退为入口的内部适配器，不再被消费方直接引用。
+9c 与金融看板都只从这一个入口取数；`.dsh/skills/fin-data/adapter/` 退为入口的内部适配器，不再被消费方直接引用。
 
 ```js
 import { query, queryMany } from './.dsh/skills/fin-data/api/index.mjs';
@@ -313,11 +312,11 @@ node .dsh/skills/fin-data/api/cli.mjs query --kind bars --code 600519 --source l
 | 统一入口 | `.dsh/skills/fin-data/api/index.mjs` | `query()` / `queryMany()` / `describe()`，信封、as-of、mock 标记 |
 | 财报接口 | `fin-data/api/financials.mjs` | 三大表 + 指标；真实指标优先，取不到回落 `mock-financials.mjs` |
 | 本地日线 | `fin-data/api/bars-local.mjs` | 读 `data/daily/` 的 CSV（不复权），`source=local` 时使用 |
-| 适配器路由 | `.dsh/data/index.mjs` | `get()`、provider 注册表、失败回退、缓存与 stale 兜底 |
-| 策略 | `.dsh/data/policy.mjs` | 支持哪些 kind、各类 TTL、每个 kind 的 provider 优先顺序 |
-| 身份 | `.dsh/data/instruments.mjs` | `cn:601318` / `hk:02318` 解析（由 fin-data 入口再导出） |
-| 缓存 | `.dsh/data/cache.mjs` | TTL + LRU 上限；过期条目保留给 stale 读取 |
-| 上游 | `.dsh/data/providers/*.mjs` | tencent（A/H 行情、日线、名称搜索、汇率）、eastmoney（A/H 财务与年报、A 股分红）、eastmoney-ann（公告列表 + 港股分红公告解析）、ifind（iFinD MCP 实时快照）、private（私有库 stub） |
+| 适配器路由 | `.dsh/skills/fin-data/adapter/index.mjs` | `get()`、provider 注册表、失败回退、缓存与 stale 兜底 |
+| 策略 | `.dsh/skills/fin-data/adapter/policy.mjs` | 支持哪些 kind、各类 TTL、每个 kind 的 provider 优先顺序 |
+| 身份 | `.dsh/skills/fin-data/adapter/instruments.mjs` | `cn:601318` / `hk:02318` 解析（由 fin-data 入口再导出） |
+| 缓存 | `.dsh/skills/fin-data/adapter/cache.mjs` | TTL + LRU 上限；过期条目保留给 stale 读取 |
+| 上游 | `.dsh/skills/fin-data/adapter/providers/*.mjs` | tencent（A/H 行情、日线、名称搜索、汇率）、eastmoney（A/H 财务与年报、A 股分红）、eastmoney-ann（公告列表 + 港股分红公告解析）、ifind（iFinD MCP 实时快照）、private（私有库 stub） |
 
 入口支持的数据种类：`status` `quote` `bars` `financials` `dividends` `annual` `universe` `fx` `search` `announcements`。
 单只标的用 `query()`，一组标的（自选股）用 `queryMany()`——后者会先向支持批量的 provider 要一次，
@@ -331,7 +330,7 @@ node .dsh/skills/fin-data/api/cli.mjs query --kind bars --code 600519 --source l
 真实完整三表的接入属于后续工作，届时只替换 provider，不动 9c 与看板。
 港股净现金（现金类 − 有息负债）也在这个接口里，看板不再自己拼资产负债表。
 
-**港股分红**没有结构化报表，走港交所派息公告解析（`.dsh/data/dividend-parse.mjs`）：公告正文是固定标签表，
+**港股分红**没有结构化报表，走港交所派息公告解析（`.dsh/skills/fin-data/adapter/dividend-parse.mjs`）：公告正文是固定标签表，
 正则确定性抽取「每股派息 / 宣派币种 / 除净日 / 派息日」，噪声公告按"是否含宣派金额"过滤，
 "(更新)"版按「报告期末 + 股息类型」去重取最新。
 
@@ -339,12 +338,12 @@ node .dsh/skills/fin-data/api/cli.mjs query --kind bars --code 600519 --source l
 
 ## 5. 开发与验证
 
-**契约测试**（离线，用 `.dsh/data/test/fixtures/` 里固化的上游响应）：
+**契约测试**（离线，用 `.dsh/skills/fin-data/adapter/test/fixtures/` 里固化的上游响应）：
 
 ```powershell
 node --test .dsh/skills/fin-data/api/test/query.test.mjs   # 入口契约（离线，8 项）
-node --test .dsh/data/test/contract.test.mjs               # 适配器 fixtures
-node .dsh/scripts/stock-data.mjs all 中国平安                # 9c 取数（需要网络）
+node --test .dsh/skills/fin-data/adapter/test/contract.test.mjs               # 适配器 fixtures
+node .dsh/skills/9c/scripts/stock-data.mjs all 中国平安                # 9c 取数（需要网络）
 ```
 
 上游改字段时测试会变红——这是唯一低成本的防线。
@@ -352,14 +351,14 @@ node .dsh/scripts/stock-data.mjs all 中国平安                # 9c 取数（�
 **跨源核对**（同时向腾讯与 iFinD 各取一次，逐字段比价格、市盈率、市净率、总市值）：
 
 ```powershell
-node .dsh/scripts/verify-quotes.mjs              # 默认核对 601318 / 600519
-node .dsh/scripts/verify-quotes.mjs 601318 000001 --threshold 1
+node .dsh/skills/fin-data/api/verify-quotes.mjs              # 默认核对 601318 / 600519
+node .dsh/skills/fin-data/api/verify-quotes.mjs 601318 000001 --threshold 1
 ```
 
 偏差超阈值即退出码 1——"换数据源改坏了"最快的报警方式。
 
-**接入私有数据库**：实现 `.dsh/data/providers/private.mjs` 的 `fetch()`，在 `capabilities` 里声明它能答哪些
-kind / market 即可。`.dsh/data/policy.mjs` 已把 `private` 排在财务类第一位，声明后自动生效，公开源退为兜底与交叉校验。
+**接入私有数据库**：实现 `.dsh/skills/fin-data/adapter/providers/private.mjs` 的 `fetch()`，在 `capabilities` 里声明它能答哪些
+kind / market 即可。`.dsh/skills/fin-data/adapter/policy.mjs` 已把 `private` 排在财务类第一位，声明后自动生效，公开源退为兜底与交叉校验。
 
 **看板插件**：在 `.dsh/plugins/financial-dashboard/` 下 `npm run build`（下载并内联 ECharts 5.6.0）、`npm test`
 （真实上游 + mock ctx 跑路由自测）。生成产物 `client.js` 随仓库提交，不要手改其中内联的 ECharts 段落。
@@ -376,9 +375,9 @@ kind / market 即可。`.dsh/data/policy.mjs` 已把 `private` 排在财务类�
 - 生成产物（如 `client.js`）随仓库提交，源码与构建脚本一并保留，便于改完重建；
 - 根目录 `.gitattributes` 统一行尾为 LF，并把 `client.js` 标记为 `-text`，保证跨机器逐字节一致；
 - `.dsh/skills/` 是项目级技能目录，DSH 按最近的 `.git` 祖先定位项目根后自动发现，改动即时生效；
-- `.dsh/scripts/` 与 `.dsh/data/` 与 `skills/` 同级；`install-skills.mjs --mode copy` 会把它们一起铺到
-  `<技能根>/..`，所以技能装完不依赖仓库在盘上（`9c` 与 `fin-data` 需要，见脚本里的 `SHARED_SKILLS`）；
-  **9c 依赖 fin-data**：装 9c 时安装器会把 `fin-data` 一起装上；单独装看板时也要保证 `fin-data` 在位；
+- 每个技能自包含（脚本、数据都在自己的目录里），`install-skills.mjs --mode copy` 只复制技能目录本身，
+  所以技能装完不依赖仓库在盘上；**9c 依赖 fin-data**：装 9c 时安装器会把 `fin-data` 一起装上，
+  单独装看板时也要保证 `fin-data` 在位；
 - MCP 条目手写在 profile 的 `cordis.patch.yml`（见 2.7），仓库里不放凭据；`java-env-prep apply`
   会输出该文件的路径（`mcpPatch`），方便直接去补条目；
 - `project/` 是环境准备克隆代码的隔离层（已忽略），凭据与 profile 不要提交。
