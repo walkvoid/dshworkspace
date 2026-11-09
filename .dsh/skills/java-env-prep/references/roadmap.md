@@ -5,7 +5,7 @@
 
 | # | 模块 | 解决什么 | 产物 | 状态 |
 | --- | --- | --- | --- | --- |
-| 1 | 环境准备 `java-env-prep` | 把资料里的连接信息变成能用的环境 | `env-profile.json`、MCP 片段、nacos 配置、克隆好的仓库、日志脚本 | ✅ 已实现 |
+| 1 | 环境准备 `java-env-prep` | 把资料里的连接信息变成能用的环境 | `env-profile.json`、`nacos` 配置、克隆好的仓库、日志脚本、MCP patch 位置提示 | ✅ 已实现 |
 | 2 | 项目导览 `java-project-tour` | 让模型在陌生仓库里快速定位：模块划分、启动类、接口入口、数据表、业务流程 | `.knowledge/` 索引（仓库 / 入口 / 表 / 流程）+ `core.json` 核心标记 | ✅ 已实现 |
 | 3 | 需求分析 `java-requirement-analysis` | 把 PRD/一句话需求拆成可落地的改动点 | `.requirements/<id>/requirement.json` + `analysis.md`（大类 / 子需求 / 锚点 / 新增类 / 估时 / 澄清问题） | ✅ 已实现 |
 | 4 | 代码编写 | 按团队规范产出代码改动 | patch / 新文件 + 自检 | 待做 |

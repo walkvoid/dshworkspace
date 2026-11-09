@@ -1,54 +1,26 @@
 # 六类动作的落点与细节
 
-## 1. 数据库 → MCP 配置片段
+## 1. 数据库 → 只提示 MCP 条目该写到哪里
 
-生成物：`<out>/mcp/<id>.yaml`，形如
+本技能**不写 MCP 配置**（没有 `mcp.config`，也不改 profile）。`apply` 的输出里带两个字段：
 
-```yaml
-- id: mcp-mysql-mysql-dev
-  name: '@deepseek-ai/dsh-mcp-client'
-  config:
-    serverName: mysql_mysql_dev
-    transport: stdio
-    command: npx
-    args: ['-y', '@benborla29/mcp-server-mysql']
-    env:
-      MYSQL_HOST: 10.0.0.11
-      MYSQL_PORT: '3306'
-      MYSQL_USER: readonly
-      MYSQL_PASS: <填入>
-      MYSQL_DB: order_db
-    failOnStartupError: false
-```
-
-**并入方式**：默认**自动并入** `~/.dsh/profiles/*/cordis.patch.yml`（优先 `desktop`），
-重启 DSH 后模型能看到 `mcp__mysql_<id>__*` 工具。
-
-| 行为 | 说明 |
+| 字段 | 内容 |
 | --- | --- |
-| 定位 patch 文件 | `--patch <path>` > `DSH_PATCH_FILE` 环境变量 > `~/.dsh/profiles/*/cordis.patch.yml` |
-| 去重 | 按条目 `id` 判断，已存在就跳过，重复执行不会写两遍 |
-| 备份 | 每次实际写入前生成 `<patch>.<时间戳>.bak` |
-| 回滚 | 删掉 `# >>> java-env-prep: MySQL MCP` 到 `# <<< java-env-prep: MySQL MCP` 之间的整段 |
-| 关闭 | `--no-mcp-apply` 只生成片段不写入；`--only mcp` 同理 |
+| `mcpPatch` | profile 的 `cordis.patch.yml` 绝对路径（`DSH_PATCH_FILE` > `~/.dsh/profiles/*/cordis.patch.yml`，desktop 优先）；没装 DSH 时为 `null` |
+| `mcpHint` | 一句给用户的话：把数据库 MCP 条目写进 `mcpPatch` 的顶层数组，含凭据、勿提交 |
+
+agent 收尾时必须把 `mcpPatch` 报给用户，并按 `SKILL.md` 里的模板帮他补条目（密码只能来自资料，**不要猜、不要试连**）。
 
 ```bash
-# 默认：生成片段 + 并入
-node scripts/env-prep.mjs apply env-profile.json --only mcp,mcp-apply
-
-# 只生成片段
-node scripts/env-prep.mjs apply env-profile.json --only mcp
-
-# 指定其他 patch 文件
-node scripts/env-prep.mjs apply env-profile.json --only mcp-apply --patch /path/to/cordis.patch.yml
+# apply 完读输出里的 mcpPatch / mcpHint
+node scripts/env-prep.mjs apply env-profile.json --only bookmark,clone,nacos,logs
 ```
 
 **注意**：
 
-- `args` 里的 MCP server 包是示例（`@benborla29/mcp-server-mysql`），团队用别的实现就换掉；
-- `serverName` 只能是 `[A-Za-z0-9_-]{1,32}`，所以 `id` 里的点、斜杠要替换成下划线；
-- 密码写进 yaml 就等于写进磁盘明文，接受不了就改成读环境变量（`MYSQL_PASS: !!js process.env.MYSQL_DEV_PASS`）；
-- 片段里的注释行不要删，它提醒下一个人"包名是占位"。
+- 条目直接手写进 profile patch，凭据落在 `cordis.patch.yml`（本地文件，不要提交/分享）；
+- `serverName` 只能是 `[A-Za-z0-9_-]{1,32}`，每个环境一个（`mysql_dev` / `mysql_qa` / …），不能重名；
+- DSH 的 HMR 会监听 profile patch，保存后一般几秒内重组；没生效再重启。
 
 ## 2. nacos → 拉取配置
 

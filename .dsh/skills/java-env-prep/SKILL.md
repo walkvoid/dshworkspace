@@ -1,6 +1,6 @@
 ---
 name: java-env-prep
-description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep、/环境准备，或直接给出一份包含数据库连接、各环境 URL、nacos/nexus 地址、git 仓库地址的文档/表格/图片/聊天记录时使用。把资料抽取成 env-profile.json，再配置数据库 MCP、拉取 nacos 配置、在浏览器打开各环境、克隆仓库、并探测内部日志平台生成取日志脚本。用户没写日志/发布/缺陷平台时，会自动探测入口（已知套件、项目站点脚本、平台登记表、浏览器书签、同域候选）并保存到 platforms.json。也用于给需要登录的内部平台（缺陷系统、发布平台、日志平台等）写自动登录脚本：用户给一个网址 + 账号密码，或说“写个自动登录/拉一下我的缺陷/bug 列表”时使用。
+description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep、/环境准备，或直接给出一份包含数据库连接、各环境 URL、nacos/nexus 地址、git 仓库地址的文档/表格/图片/聊天记录时使用。把资料抽取成 env-profile.json，再拉取 nacos 配置、在浏览器打开各环境、克隆仓库、并探测内部日志平台生成取日志脚本；数据库连接不写 MCP 配置，apply 只提示 profile 的 cordis.patch.yml 位置，由用户按模板手写条目。用户没写日志/发布/缺陷平台时，会自动探测入口（已知套件、项目站点脚本、平台登记表、浏览器书签、同域候选）并保存到 platforms.json。也用于给需要登录的内部平台（缺陷系统、发布平台、日志平台等）写自动登录脚本：用户给一个网址 + 账号密码，或说“写个自动登录/拉一下我的缺陷/bug 列表”时使用。
 ---
 
 # Java 环境准备
@@ -18,7 +18,7 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 <工作目录>/project/<项目名>/              # git.dir：各仓库平铺在这里
 <工作目录>/project/<项目名>/.env-prep/    # outDir：本技能的全部产物
 ├── env-profile.json                      # 唯一输入 + 探测结果
-├── nacos/  mcp/  bookmarks/              # 配置、MCP 片段、书签备份
+├── nacos/  bookmarks/                    # 配置、书签备份
 ├── platforms.json                        # 日志/发布/缺陷平台入口
 ├── .platforms.json                       # 平台登记表（跨次探测复用，不含凭据）
 ├── tools/<站点>/<站点>.mjs               # 登录 + 取数脚本、会话
@@ -55,7 +55,7 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 
 | 输入 | 动作 | 落点 |
 | --- | --- | --- |
-| 数据库（MySQL 等） | 生成 MCP 配置片段 | `<out>/mcp/<id>.yaml`，按提示并入 DSH `cordis.patch.yml` |
+| 数据库（MySQL 等） | `apply` 输出 `mcpPatch` / `mcpHint`，提示 MCP 条目该手写到哪里 | profile 的 `cordis.patch.yml`（本机，含凭据） |
 | nacos | 拉取配置 + 收进书签 | `<out>/nacos/<id>/<group>__<dataId>` |
 | 各环境 URL、nexus | **写入浏览器书签**（项目名文件夹 + 分类） | Chromium 系直接改 `Bookmarks`；运行中退回可导入的 HTML |
 | git 仓库 | `git clone` 到指定目录（**只克隆最近 30 天有提交的仓库**），然后切到“正在开发”的分支 | 目标目录 |
@@ -229,13 +229,13 @@ node scripts/env-prep.mjs platforms <env-profile.json>   # 只读已保存结果
 node scripts/env-prep.mjs plan <env-profile.json>
 ```
 
-计划里会列出：要收藏几个链接、克隆几个仓库、拉几个配置、生成几个 MCP 片段；
+计划里会列出：要收藏几个链接、克隆几个仓库、拉几个配置；数据库只提示 MCP patch 位置，不写配置；
 缺平台时最前面会多一个 `discover` 动作。用户确认后再执行——**写书签和克隆仓库都是有副作用的动作**。
 
 ### 第 4 步：执行
 
 ```bash
-node scripts/env-prep.mjs apply <env-profile.json> --only bookmark,clone,nacos,mcp,logs
+node scripts/env-prep.mjs apply <env-profile.json> --only bookmark,clone,nacos,logs
 ```
 
 - 默认输出到 profile 的 `outDir`（没设就是当前目录的 `.env-prep/`），可用 `--out` 改；
@@ -296,9 +296,10 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
 
 ### 第 5 步：收尾
 
-1. **MCP 片段**：`apply` 默认会**自动并入** `~/.dsh/profiles/*/cordis.patch.yml`（按 id 去重、
-   写前备份、用注释块包裹）。**重启 DSH** 后数据库工具才出现（`mcp__mysql_<id>__*`）。
-   不想自动写入时加 `--no-mcp-apply`，或只跑 `--only mcp` 生成片段；
+1. **MCP 位置**：`apply` 不写任何 MCP 配置，只在输出里给 `mcpPatch`（profile 的 `cordis.patch.yml`）
+   和 `mcpHint`。**必须把 `mcpPatch` 告诉用户**，按模板把数据库条目手写进该文件的顶层数组；
+   保存后 DSH 的 HMR 一般几秒内重组，没生效再重启（工具前缀 `mcp__mysql_<环境>__*`）。
+   不要猜密码、不要试连；`<填入>` 这类占位符要提醒用户替换；
 2. **日志脚本**：`<out>/logs/fetch-logs-<id>.mjs` 是骨架，按探测出的候选接口补全，
    Cookie 走环境变量 `LOG_PLATFORM_COOKIE`，不要写死在文件里；如果平台探测已指向站点脚本
    （`log.tools`，如 `.env-prep/tools/beecloud/beecloud.mjs`），生成的是**转发脚本**，不再重复造轮子；

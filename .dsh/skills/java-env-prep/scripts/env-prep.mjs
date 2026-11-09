@@ -4,7 +4,7 @@
  *
  *   node env-prep.mjs validate <profile.json>
  *   node env-prep.mjs plan     <profile.json>          # 只打印计划，不执行
- *   node env-prep.mjs apply    <profile.json> [--only open,clone,nacos,mcp,logs]
+ *   node env-prep.mjs apply    <profile.json> [--only open,clone,nacos,logs]
  *
  * 设计原则：
  * - 默认 dry-run，任何有副作用的动作都要显式 --apply；
@@ -184,74 +184,6 @@ export function inferDatabases(profile, outDir) {
     applied.push({ id: db.id, database: chosen, basis: matched === undefined ? 'most-frequent' : 'host-match' });
   }
   return { schemas, applied };
-}
-
-/**
- * 定位 DSH 的 patch 文件。
- *
- * 优先 `--patch`，其次环境变量 `DSH_PATCH_FILE`，最后在 `~/.dsh/profiles/*` 里找
- * `cordis.patch.yml`（多个 profile 时优先 `desktop`）。
- *
- * @returns 绝对路径，或 `null`（没装 DSH）。
- */
-export function resolvePatchFile(explicit) {
-  if (typeof explicit === 'string' && explicit !== '') return path.resolve(explicit);
-  if (process.env.DSH_PATCH_FILE) return path.resolve(process.env.DSH_PATCH_FILE);
-  const home = process.env.USERPROFILE ?? os.homedir();
-  const profilesDir = path.join(home, '.dsh', 'profiles');
-  if (!fs.existsSync(profilesDir)) return null;
-  const found = fs
-    .readdirSync(profilesDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => path.join(profilesDir, entry.name, 'cordis.patch.yml'))
-    .filter((file) => fs.existsSync(file))
-    .sort((a, b) => (b.includes('desktop') ? 1 : 0) - (a.includes('desktop') ? 1 : 0));
-  return found[0] ?? null;
-}
-
-/**
- * 把 MCP 片段并入 patch 文件。
- *
- * 只做追加：按条目 id 去重，写前备份，用注释块包住，方便整段删除回滚。
- *
- * @param patchFile - `cordis.patch.yml` 路径。
- * @param fragments - 片段文件路径数组。
- * @param project - 用于注释块标识。
- * @returns 合并统计。
- */
-export function mergeMcpIntoPatch(patchFile, fragments, project) {
-  const raw = fs.readFileSync(patchFile, 'utf8');
-  const blocks = [];
-  const skipped = [];
-
-  for (const file of fragments) {
-    if (!fs.existsSync(file)) continue;
-    const body = fs
-      .readFileSync(file, 'utf8')
-      .split('\n')
-      .filter((line) => !line.trimStart().startsWith('#'))
-      .join('\n')
-      .trim();
-    if (body === '') continue;
-    const id = /- id:\s*([A-Za-z0-9_-]+)/.exec(body)?.[1];
-    if (id === undefined) continue;
-    if (new RegExp(`^\\s*-?\\s*id:\\s*${id}\\s*$`, 'm').test(raw)) {
-      skipped.push(id);
-      continue;
-    }
-    blocks.push(body);
-  }
-
-  if (blocks.length === 0) return { patch: patchFile, appended: 0, skipped };
-
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backup = `${patchFile}.${stamp}.bak`;
-  fs.writeFileSync(backup, raw, 'utf8');
-
-  const header = `\n# >>> java-env-prep: MySQL MCP（${project}，删除本段即可回滚）\n`;
-  const merged = `${raw.replace(/\s*$/, '')}\n${header}${blocks.join('\n')}\n# <<< java-env-prep: MySQL MCP\n`;
-  fs.writeFileSync(patchFile, merged, 'utf8');
-  return { patch: patchFile, backup, appended: blocks.length, skipped };
 }
 
 /**
@@ -438,13 +370,8 @@ function buildPlan(profile, options = {}) {
       });
     }
   }
-  for (const db of list(profile, 'databases')) {
-    actions.push({ type: 'mcp', target: db.id, detail: `生成 ${db.kind} 的 MCP 配置片段` });
-  }
-  // 默认把片段并入 DSH 的 patch 文件；没有 DSH 或显式关闭时只生成片段。
-  if (list(profile, 'databases').length > 0 && options.patchFile !== null && options.skipMcpApply !== true) {
-    actions.push({ type: 'mcp-apply', target: profile.project, patch: options.patchFile, detail: `并入 ${options.patchFile}` });
-  }
+  // 数据库的 MCP 条目不再由本技能生成/写入：apply 结果里会带 mcpHint，指向 profile 的
+  // cordis.patch.yml，由用户（或 agent 按 SKILL.md 的模板）手写进去。
   return actions;
 }
 
@@ -1026,32 +953,6 @@ async function fetchNacos(nacos, outDir) {
   return results;
 }
 
-/** 生成 mysql 的 MCP 配置片段（DSH cordis.patch.yml 用）。 */
-function mysqlFragment(db) {
-  const env = [
-    `      MYSQL_HOST: ${db.host}`,
-    `      MYSQL_PORT: '${db.port ?? 3306}'`,
-    `      MYSQL_USER: ${db.username}`,
-    `      MYSQL_PASS: ${db.password ?? ''}`,
-    `      MYSQL_DB: ${db.database}`,
-  ].join('\n');
-  return [
-    `# ${db.id}（${db.env ?? 'env'}）：数据库 MCP`,
-    `# 注意：下面的 MCP server 包名是占位，请按团队实际使用的实现替换 args。`,
-    `- id: mcp-mysql-${db.id}`,
-    `  name: '@deepseek-ai/dsh-mcp-client'`,
-    `  config:`,
-    `    serverName: mysql_${db.id.replace(/[^A-Za-z0-9_]/g, '_').slice(0, 20)}`,
-    `    transport: stdio`,
-    `    command: npx`,
-    `    args: ['-y', '@benborla29/mcp-server-mysql']`,
-    `    env:`,
-    env,
-    `    failOnStartupError: false`,
-    '',
-  ].join('\n');
-}
-
 /** 探测日志平台，生成取日志脚本骨架；已有站点脚本时生成转发脚本，避免重复造轮子。 */
 async function probeLogPlatform(log, outDir, projectDir = null) {
   const dir = path.join(outDir, 'logs');
@@ -1585,6 +1486,28 @@ function resolveProjectDir(profile, outDir) {
   return typeof gitDir === 'string' && gitDir !== '' ? path.resolve(expandHome(gitDir)) : process.cwd();
 }
 
+/**
+ * 找 DSH profile 的 patch 文件——数据库 MCP 条目要手写到这里。
+ *
+ * 优先级：`DSH_PATCH_FILE` > `~/.dsh/profiles/<profile>/cordis.patch.yml`（多个时 desktop 优先）。
+ * 没装 DSH 时返回 null，调用方只提示"没找到 profile"。
+ *
+ * @returns 绝对路径或 null。
+ */
+export function resolveProfilePatch() {
+  if (process.env.DSH_PATCH_FILE) return path.resolve(process.env.DSH_PATCH_FILE);
+  const home = process.env.USERPROFILE ?? os.homedir();
+  const profilesDir = path.join(home, '.dsh', 'profiles');
+  if (!fs.existsSync(profilesDir)) return null;
+  const found = fs
+    .readdirSync(profilesDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(profilesDir, entry.name, 'cordis.patch.yml'))
+    .filter((file) => fs.existsSync(file))
+    .sort((a, b) => (b.includes('desktop') ? 1 : 0) - (a.includes('desktop') ? 1 : 0));
+  return found[0] ?? null;
+}
+
 function extractScriptBase(text) {
   const match = text.match(/(?:const|let|var)\s+(?:BASE|BASE_URL|BASEURL|HOST|ORIGIN)\s*=\s*['"`](https?:\/\/[^'"`\s]+)['"`]/);
   return match?.[1] ?? null;
@@ -2114,7 +2037,7 @@ async function main() {
   const [command, profilePath, ...rest] = process.argv.slice(2);
   if (!command || !profilePath) {
     console.log('用法：env-prep.mjs <validate|plan|apply|infer|branch|discover|platforms> <profile.json> [选项]');
-    console.log('  --only a,b            只执行指定动作（discover/bookmark/clone/nacos/mcp/logs/hosts）');
+    console.log('  --only a,b            只执行指定动作（discover/bookmark/clone/nacos/logs/hosts）');
     console.log('  --out dir             输出目录，默认 ./.env-prep');
     console.log('  --project <name>      覆盖项目名（默认从仓库前缀或 git 组名推断）');
     console.log('  --database <name>     infer 时强制指定库名');
@@ -2200,9 +2123,6 @@ async function main() {
   const bookmarkMode = modeIndex === -1 ? 'auto' : String(rest[modeIndex + 1] ?? 'auto');
   const allowClose = rest.includes('--close-browser');
   const forceClose = rest.includes('--force-close');
-  const skipMcpApply = rest.includes('--no-mcp-apply');
-  const patchIndex = rest.indexOf('--patch');
-  const patchFile = resolvePatchFile(patchIndex === -1 ? undefined : rest[patchIndex + 1]);
   const timeoutIndex = rest.indexOf('--confirm-timeout');
   const closeTimeout = timeoutIndex === -1 ? 30 : Number(rest[timeoutIndex + 1]) || 30;
   const apply = command === 'apply';
@@ -2330,7 +2250,7 @@ async function main() {
     }
   }
 
-  const plan = buildPlan(profile, { patchFile, skipMcpApply, autoDiscover: !noDiscover }).filter(
+  const plan = buildPlan(profile, { autoDiscover: !noDiscover }).filter(
     (action) => !(discovery !== null && action.type === 'discover'),
   );
   if (discovery !== null) {
@@ -2339,6 +2259,14 @@ async function main() {
   const selected = only === null ? plan : plan.filter((action) => only.includes(action.type));
 
   const output = { project: profile.project, apply, problems, outDir, plan: selected, results: [] };
+  // MCP 条目要手写：把 profile 的 patch 位置直接给出来，别再让用户自己找。
+  const profilePatch = resolveProfilePatch();
+  if (list(profile, 'databases').length > 0) {
+    output.mcpPatch = profilePatch;
+    output.mcpHint = profilePatch
+      ? `数据库 MCP 条目写进 ${profilePatch} 的顶层数组（含凭据，勿提交）；DSH 的 HMR 会自动重载，没生效再重启`
+      : '本机没找到 DSH profile（~/.dsh/profiles/*/cordis.patch.yml），MCP 条目按宿主方式配置';
+  }
   if (!apply) {
     console.log(JSON.stringify({ ...output, profile: maskProfile(profile) }, null, 2));
     return;
@@ -2375,16 +2303,6 @@ async function main() {
       } else if (action.type === 'nacos') {
         const nacos = list(profile, 'nacos').find((item) => item.id === action.target);
         output.results.push({ ...action, configs: await fetchNacos(nacos, outDir) });
-      } else if (action.type === 'mcp') {
-        const db = list(profile, 'databases').find((item) => item.id === action.target);
-        const dir = path.join(outDir, 'mcp');
-        fs.mkdirSync(dir, { recursive: true });
-        const file = path.join(dir, `${db.id}.yaml`);
-        fs.writeFileSync(file, mysqlFragment(db), 'utf8');
-        output.results.push({ ...action, file });
-      } else if (action.type === 'mcp-apply') {
-        const fragments = list(profile, 'databases').map((db) => path.join(outDir, 'mcp', `${db.id}.yaml`));
-        output.results.push({ ...action, ...mergeMcpIntoPatch(action.patch, fragments, profile.project) });
       } else if (action.type === 'logs') {
         const log = list(profile, 'logs').find((item) => item.id === action.target);
         const probed = await probeLogPlatform(log, outDir, projectDir);
