@@ -233,6 +233,7 @@ node .dsh/skills/java-requirement-analysis/scripts/req.mjs validate .requirement
 ```text
 .dsh/                              仓库里只有这一个 .dsh，插件 / 技能 / 数据层都在它下面
 .dsh/plugins/financial-dashboard/  看板插件（bundle 根，含 package.json / cordis.patch.yml）
+.dsh/plugins/mcp-bundle/           可选 MCP bundle：MySQL×3 + COS，env 驱动、默认 disabled
 .dsh/skills/9c/                    人格技能：SKILL.md + persona / framework / style / eval
 .dsh/skills/java-env-prep/         环境准备技能：SKILL.md + scripts/env-prep.mjs + references/
 .dsh/skills/java-project-tour/     项目导览技能：SKILL.md + scripts/tour.mjs + references/schema.md

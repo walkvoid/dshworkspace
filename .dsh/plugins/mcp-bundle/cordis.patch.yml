@@ -1,0 +1,80 @@
+# MCP servers contributed by @local/mcp-bundle.
+#
+# Design notes:
+# - Every entry is `disabled` until its environment variables exist, so a
+#   profile that includes this bundle never spawns an unconfigured server and
+#   the tool list stays clean.
+# - Values are read at boot from DSH's layered environment:
+#   inherited process env > <cwd>/.env > ~/.dsh/.env.
+# - Patch layers are applied as: bundle layers -> profile patch -> home patch
+#   -> --patch overlays. A user patch that targets the same `id` replaces the
+#   whole config, so it must restate every field it keeps.
+# - serverName is the tool namespace: `mcp__mysql_dev__*`, `mcp__cos__*`.
+#   Keep it unique across every layer of one profile.
+
+- insert:
+    # ---------------------------------------------------------------- MySQL
+    - id: mcp-mysql-dev
+      name: '@deepseek-ai/dsh-mcp-client'
+      disabled: !!js '!process.env.MYSQL_DEV_HOST'
+      config:
+        serverName: mysql_dev
+        transport: stdio
+        command: npx
+        args: ['-y', '@benborla29/mcp-server-mysql']
+        failOnStartupError: false
+        env:
+          MYSQL_HOST: !!js 'process.env.MYSQL_DEV_HOST'
+          MYSQL_PORT: !!js 'process.env.MYSQL_DEV_PORT ?? "3306"'
+          MYSQL_USER: !!js 'process.env.MYSQL_DEV_USER ?? "root"'
+          MYSQL_PASS: !!js 'process.env.MYSQL_DEV_PASS ?? ""'
+          MYSQL_DB: !!js 'process.env.MYSQL_DEV_DB ?? ""'
+
+    - id: mcp-mysql-qa
+      name: '@deepseek-ai/dsh-mcp-client'
+      disabled: !!js '!process.env.MYSQL_QA_HOST'
+      config:
+        serverName: mysql_qa
+        transport: stdio
+        command: npx
+        args: ['-y', '@benborla29/mcp-server-mysql']
+        failOnStartupError: false
+        env:
+          MYSQL_HOST: !!js 'process.env.MYSQL_QA_HOST'
+          MYSQL_PORT: !!js 'process.env.MYSQL_QA_PORT ?? "3306"'
+          MYSQL_USER: !!js 'process.env.MYSQL_QA_USER ?? "root"'
+          MYSQL_PASS: !!js 'process.env.MYSQL_QA_PASS ?? ""'
+          MYSQL_DB: !!js 'process.env.MYSQL_QA_DB ?? ""'
+
+    - id: mcp-mysql-uat
+      name: '@deepseek-ai/dsh-mcp-client'
+      disabled: !!js '!process.env.MYSQL_UAT_HOST'
+      config:
+        serverName: mysql_uat
+        transport: stdio
+        command: npx
+        args: ['-y', '@benborla29/mcp-server-mysql']
+        failOnStartupError: false
+        env:
+          MYSQL_HOST: !!js 'process.env.MYSQL_UAT_HOST'
+          MYSQL_PORT: !!js 'process.env.MYSQL_UAT_PORT ?? "3306"'
+          MYSQL_USER: !!js 'process.env.MYSQL_UAT_USER ?? "root"'
+          MYSQL_PASS: !!js 'process.env.MYSQL_UAT_PASS ?? ""'
+          MYSQL_DB: !!js 'process.env.MYSQL_UAT_DB ?? ""'
+
+    # ------------------------------------------------------------ Tencent COS
+    - id: mcp-cos
+      name: '@deepseek-ai/dsh-mcp-client'
+      disabled: !!js '!process.env.COS_SECRET_ID'
+      config:
+        serverName: cos
+        transport: stdio
+        command: npx
+        args: ['-y', 'cos-mcp@1.0.15']
+        failOnStartupError: false
+        env:
+          COS_REGION: !!js 'process.env.COS_REGION ?? ""'
+          COS_BUCKET: !!js 'process.env.COS_BUCKET ?? ""'
+          COS_SECRET_ID: !!js 'process.env.COS_SECRET_ID ?? ""'
+          COS_SECRET_KEY: !!js 'process.env.COS_SECRET_KEY ?? ""'
+          COS_DATASET_NAME: !!js 'process.env.COS_DATASET_NAME ?? ""'
