@@ -1,0 +1,413 @@
+{
+  "updatedAt": "2026-11-09T13:45:31",
+  "items": {
+    "000016.SH": {
+      "symbol": "000016.SH",
+      "code": "000016",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "index",
+      "name": "上证50"
+    },
+    "600028.SH": {
+      "symbol": "600028.SH",
+      "code": "600028",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国石化"
+    },
+    "600030.SH": {
+      "symbol": "600030.SH",
+      "code": "600030",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中信证券"
+    },
+    "600031.SH": {
+      "symbol": "600031.SH",
+      "code": "600031",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "三一重工"
+    },
+    "600036.SH": {
+      "symbol": "600036.SH",
+      "code": "600036",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "招商银行"
+    },
+    "600050.SH": {
+      "symbol": "600050.SH",
+      "code": "600050",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国联通"
+    },
+    "600089.SH": {
+      "symbol": "600089.SH",
+      "code": "600089",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "特变电工"
+    },
+    "600111.SH": {
+      "symbol": "600111.SH",
+      "code": "600111",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "北方稀土"
+    },
+    "600150.SH": {
+      "symbol": "600150.SH",
+      "code": "600150",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国船舶"
+    },
+    "600183.SH": {
+      "symbol": "600183.SH",
+      "code": "600183",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "生益科技"
+    },
+    "600276.SH": {
+      "symbol": "600276.SH",
+      "code": "600276",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "恒瑞医药"
+    },
+    "600309.SH": {
+      "symbol": "600309.SH",
+      "code": "600309",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "万华化学"
+    },
+    "600406.SH": {
+      "symbol": "600406.SH",
+      "code": "600406",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "国电南瑞"
+    },
+    "600519.SH": {
+      "symbol": "600519.SH",
+      "code": "600519",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "贵州茅台"
+    },
+    "600760.SH": {
+      "symbol": "600760.SH",
+      "code": "600760",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中航沈飞"
+    },
+    "600809.SH": {
+      "symbol": "600809.SH",
+      "code": "600809",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "山西汾酒"
+    },
+    "600887.SH": {
+      "symbol": "600887.SH",
+      "code": "600887",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "伊利股份"
+    },
+    "600900.SH": {
+      "symbol": "600900.SH",
+      "code": "600900",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "长江电力"
+    },
+    "600930.SH": {
+      "symbol": "600930.SH",
+      "code": "600930",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "华电新能"
+    },
+    "601012.SH": {
+      "symbol": "601012.SH",
+      "code": "601012",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "隆基绿能"
+    },
+    "601088.SH": {
+      "symbol": "601088.SH",
+      "code": "601088",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国神华"
+    },
+    "601127.SH": {
+      "symbol": "601127.SH",
+      "code": "601127",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "赛力斯"
+    },
+    "601166.SH": {
+      "symbol": "601166.SH",
+      "code": "601166",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "兴业银行"
+    },
+    "601211.SH": {
+      "symbol": "601211.SH",
+      "code": "601211",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "国泰海通"
+    },
+    "601288.SH": {
+      "symbol": "601288.SH",
+      "code": "601288",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "农业银行"
+    },
+    "601318.SH": {
+      "symbol": "601318.SH",
+      "code": "601318",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国平安"
+    },
+    "601328.SH": {
+      "symbol": "601328.SH",
+      "code": "601328",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "交通银行"
+    },
+    "601398.SH": {
+      "symbol": "601398.SH",
+      "code": "601398",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "工商银行"
+    },
+    "601600.SH": {
+      "symbol": "601600.SH",
+      "code": "601600",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国铝业"
+    },
+    "601601.SH": {
+      "symbol": "601601.SH",
+      "code": "601601",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国太保"
+    },
+    "601628.SH": {
+      "symbol": "601628.SH",
+      "code": "601628",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国人寿"
+    },
+    "601658.SH": {
+      "symbol": "601658.SH",
+      "code": "601658",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "邮储银行"
+    },
+    "601668.SH": {
+      "symbol": "601668.SH",
+      "code": "601668",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国建筑"
+    },
+    "601688.SH": {
+      "symbol": "601688.SH",
+      "code": "601688",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "华泰证券"
+    },
+    "601728.SH": {
+      "symbol": "601728.SH",
+      "code": "601728",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国电信"
+    },
+    "601857.SH": {
+      "symbol": "601857.SH",
+      "code": "601857",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国石油"
+    },
+    "601888.SH": {
+      "symbol": "601888.SH",
+      "code": "601888",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国中免"
+    },
+    "601899.SH": {
+      "symbol": "601899.SH",
+      "code": "601899",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "紫金矿业"
+    },
+    "601919.SH": {
+      "symbol": "601919.SH",
+      "code": "601919",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中远海控"
+    },
+    "601988.SH": {
+      "symbol": "601988.SH",
+      "code": "601988",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中国银行"
+    },
+    "603019.SH": {
+      "symbol": "603019.SH",
+      "code": "603019",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中科曙光"
+    },
+    "603259.SH": {
+      "symbol": "603259.SH",
+      "code": "603259",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "药明康德"
+    },
+    "603501.SH": {
+      "symbol": "603501.SH",
+      "code": "603501",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "豪威集团"
+    },
+    "603986.SH": {
+      "symbol": "603986.SH",
+      "code": "603986",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "兆易创新"
+    },
+    "603993.SH": {
+      "symbol": "603993.SH",
+      "code": "603993",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "洛阳钼业"
+    },
+    "688008.SH": {
+      "symbol": "688008.SH",
+      "code": "688008",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "澜起科技"
+    },
+    "688012.SH": {
+      "symbol": "688012.SH",
+      "code": "688012",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中微公司"
+    },
+    "688041.SH": {
+      "symbol": "688041.SH",
+      "code": "688041",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "海光信息"
+    },
+    "688111.SH": {
+      "symbol": "688111.SH",
+      "code": "688111",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "金山办公"
+    },
+    "688256.SH": {
+      "symbol": "688256.SH",
+      "code": "688256",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "寒武纪"
+    },
+    "688981.SH": {
+      "symbol": "688981.SH",
+      "code": "688981",
+      "exchange": "sh",
+      "market": "cn",
+      "kind": "stock",
+      "name": "中芯国际"
+    }
+  }
+}

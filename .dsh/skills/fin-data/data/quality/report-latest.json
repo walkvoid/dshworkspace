@@ -1,0 +1,238 @@
+{
+  "generatedAt": "2026-11-09T13:50:22",
+  "files": 51,
+  "rows": 120638,
+  "violations": [],
+  "violationCount": 0,
+  "notes": [
+    {
+      "symbol": "600089.SH",
+      "date": "2023-07-18",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 27.06% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600183.SH",
+      "date": "2018-05-28",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 32.12% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600276.SH",
+      "date": "2016-06-16",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 15.78% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600276.SH",
+      "date": "2017-05-31",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 15.45% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600276.SH",
+      "date": "2018-05-30",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 21.90% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600276.SH",
+      "date": "2019-03-28",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 13.06% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600276.SH",
+      "date": "2020-05-25",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 15.57% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600276.SH",
+      "date": "2021-06-10",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 13.25% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600309.SH",
+      "date": "2017-05-18",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 16.70% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600406.SH",
+      "date": "2021-06-23",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 16.83% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600406.SH",
+      "date": "2022-06-22",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 19.03% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600406.SH",
+      "date": "2023-06-21",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 18.52% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600760.SH",
+      "date": "2021-06-24",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 29.88% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600760.SH",
+      "date": "2023-06-27",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 28.44% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "600809.SH",
+      "date": "2021-07-05",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 24.23% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "601012.SH",
+      "date": "2018-05-29",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 30.75% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "601012.SH",
+      "date": "2019-04-17",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 13.62% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "601012.SH",
+      "date": "2021-06-23",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 27.27% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "601012.SH",
+      "date": "2022-06-06",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 24.21% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "601088.SH",
+      "date": "2022-07-11",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 13.30% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "601668.SH",
+      "date": "2018-06-29",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 29.37% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "601888.SH",
+      "date": "2017-06-16",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 50.97% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "601919.SH",
+      "date": "2021-07-14",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 25.00% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "601919.SH",
+      "date": "2022-12-14",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 15.27% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "601919.SH",
+      "date": "2023-06-28",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 13.62% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "603019.SH",
+      "date": "2016-04-25",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 47.09% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "603019.SH",
+      "date": "2019-04-23",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 31.42% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "603019.SH",
+      "date": "2020-05-08",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 21.65% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "603259.SH",
+      "date": "2019-07-02",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 25.39% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "603259.SH",
+      "date": "2020-06-04",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 27.76% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "603259.SH",
+      "date": "2021-06-08",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 17.54% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "603501.SH",
+      "date": "2022-07-28",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 24.20% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "603986.SH",
+      "date": "2017-05-22",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 51.37% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "603986.SH",
+      "date": "2018-05-21",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 21.61% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "603986.SH",
+      "date": "2020-05-07",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 26.05% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "603986.SH",
+      "date": "2021-05-21",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 29.98% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "688012.SH",
+      "date": "2026-05-29",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 34.30% (expected on raw prices at ex-rights)"
+    },
+    {
+      "symbol": "688256.SH",
+      "date": "2026-05-08",
+      "rule": "EX_RIGHTS",
+      "detail": "close dropped 36.70% (expected on raw prices at ex-rights)"
+    }
+  ],
+  "noteCount": 38
+}

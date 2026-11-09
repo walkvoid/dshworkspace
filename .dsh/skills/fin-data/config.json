@@ -1,0 +1,20 @@
+{
+  "timezone": "Asia/Shanghai",
+  "history_start": "2016-01-01",
+  "universe": "sse50",
+  "storage": {
+    "compress": "none"
+  },
+  "sources": {
+    "order": ["akshare", "adata", "ifind", "web"],
+    "concurrency": 1,
+    "min_interval_ms": 250,
+    "retries": 3
+  },
+  "update": {
+    "close_time": "15:30"
+  },
+  "git": {
+    "autoCommit": false
+  }
+}

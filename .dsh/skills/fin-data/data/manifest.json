@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "timezone": "Asia/Shanghai",
+  "generatedAt": "2026-11-09T13:52:24",
+  "datasets": {
+    "daily.cn": {
+      "kind": "daily-bar",
+      "adjust": "none",
+      "format": "csv",
+      "fields": [
+        "date",
+        "symbol",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "amount",
+        "turnover",
+        "src"
+      ],
+      "universe": [
+        "sse50"
+      ],
+      "coverage": {
+        "from": "2016-01-04",
+        "to": "2026-11-06"
+      },
+      "lastTradeDate": "2026-11-06",
+      "symbolCount": 51,
+      "rowCount": 120638,
+      "byExchange": {
+        "index": {
+          "symbols": 1,
+          "rows": 2633
+        },
+        "sh": {
+          "symbols": 50,
+          "rows": 118005
+        }
+      },
+      "sources": {
+        "ak": 120638
+      }
+    }
+  }
+}

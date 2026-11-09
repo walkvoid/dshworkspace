@@ -1,15 +1,17 @@
 # dshworkspace
 
-DeepSeek Harness（DSH）的插件与技能集合：一块能用的**金融看板**、两个对话里直接触发的**技能**，
-外加一条统一的行情/财务取数管线。生成的浏览器包随仓库提交，clone 后无需构建。
+DeepSeek Harness（DSH）的插件与技能集合：一块能用的**金融看板**、几个对话里直接触发的**技能**、
+一条统一的行情/财务取数管线，以及一个可离线查询、随仓库分发的 **A 股日线数据仓库**。
+生成的浏览器包随仓库提交，clone 后无需构建。
 
 | 内容 | 是什么 | 入口 |
 | --- | --- | --- |
 | 金融看板 | DSH 插件 bundle（`.dsh/plugins/financial-dashboard/`） | 左侧栏 / 右侧栏 |
 | 史诗级韭菜 | 技能（`.dsh/skills/9c/`） | `/9c`、`/史诗级韭菜` |
+| A 股日线数据 | 技能 + 数据（`.dsh/skills/fin-data/`） | `/fin-data` |
 | Java 环境准备 | 技能（`.dsh/skills/java-env-prep/`） | `/java-env-prep`、`/环境准备` |
 | 项目导览 | 技能（`.dsh/skills/java-project-tour/`） | `/java-project-tour`、`/代码地图` |
-| 数据层 | `.dsh/data/` + `.dsh/scripts/` | 以上三者共用 |
+| 数据层 | `.dsh/data/` + `.dsh/scripts/` | 以上内容共用 |
 
 ---
 
@@ -235,6 +237,7 @@ node .dsh/skills/java-requirement-analysis/scripts/req.mjs validate .requirement
 .dsh/skills/java-env-prep/         环境准备技能：SKILL.md + scripts/env-prep.mjs + references/
 .dsh/skills/java-project-tour/     项目导览技能：SKILL.md + scripts/tour.mjs + references/schema.md
 .dsh/skills/java-requirement-analysis/ 需求分析技能：SKILL.md + scripts/req.mjs + references/change-taxonomy.md
+.dsh/skills/fin-data/              A 股日线数据技能：findata/ + data/（上证50 种子集）+ references/
 .dsh/scripts/                      取数与安装 CLI：install-skills / stock-data / bili-sync / verify-quotes
 .dsh/data/                         统一取数层：index / policy / instruments / cache / errors / providers
 SKILL_INSTALL_GUIDE.md             写给 Agent 的安装引导（支持点名只装某一块）

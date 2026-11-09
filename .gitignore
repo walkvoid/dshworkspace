@@ -33,3 +33,10 @@ Thumbs.db
 
 # 看板运行期数据：每日选股结果与历史（本地，不入库）
 .dsh/plugins/financial-dashboard/.data/
+
+# fin-data：虚拟环境、按需缓存（非种子标的与全市场数据不入库）
+.dsh/skills/fin-data/.venv/
+.dsh/skills/fin-data/**/__pycache__/
+.dsh/skills/fin-data/.pytest_cache/
+.dsh/skills/fin-data/data/local/
+.dsh/skills/fin-data/data/**/*.lock

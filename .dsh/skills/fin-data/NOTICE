@@ -1,0 +1,20 @@
+fin-data 数据来源与使用声明
+================================
+
+1. 数据来源（按取数链顺序）
+   - akshare（https://github.com/akfamily/akshare），MIT License，聚合公开行情接口
+   - adata（https://github.com/1nchaos/adata），Apache-2.0
+   - 同花顺 iFinD（MCP 服务）：仅用于本地抽样校验，其数据不写入本仓库任何公开文件
+   - 东方财富 push2his / 腾讯 ifzq 公开 K 线接口（网页直连兜底）
+
+2. 数据内容
+   - A 股与指数的不复权日线：date, symbol, open, high, low, close, volume, amount, turnover, src
+   - 仅为历史行情整理，不含任何投资建议。
+
+3. 版权与再分发
+   - 行情数据的版权归各交易所及数据提供方所有。本仓库仅用于个人研究与学习，
+     不保证数据的完整性、准确性或及时性，不得用于商业用途或再分发。
+   - 如相关数据方提出异议，请删除 data/ 目录下的数据文件。
+
+4. 免责
+   - 使用本仓库数据产生的任何后果由使用者自行承担。

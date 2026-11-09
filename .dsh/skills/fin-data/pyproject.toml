@@ -1,0 +1,28 @@
+[project]
+name = "fin-data"
+version = "0.1.0"
+description = "A-share daily-bar store with an akshare -> adata -> iFinD -> web fallback chain"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+dependencies = [
+  "pandas>=2.1,<3",
+  "requests>=2.31",
+]
+
+[project.optional-dependencies]
+# Fetching needs the vendor SDKs; reading only needs pandas.
+update = [
+  "akshare>=1.20,<1.21",
+  "adata>=2.9,<3",
+]
+
+[project.scripts]
+fin-data = "findata.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["findata"]
