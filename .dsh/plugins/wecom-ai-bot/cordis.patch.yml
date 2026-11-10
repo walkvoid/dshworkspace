@@ -1,0 +1,4 @@
+- insert:
+    - id: wecom-ai-bot
+      name: 'dsh-wecom-ai-bot'
+      config: {}

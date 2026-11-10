@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "WeCom AI bot",
+    "description": "Connects an Enterprise WeChat bot to DSH with a global switch, group auto authorization, workspace-scoped grants, and editable nicknames."
+  }
+}
