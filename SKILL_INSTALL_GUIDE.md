@@ -19,9 +19,9 @@ https://raw.githubusercontent.com/walkvoid/dshworkspace/main/SKILL_INSTALL_GUIDE
 | --- | --- | --- | --- |
 | 金融看板 | DSH 插件 bundle | 右侧栏 + 左侧栏的行情面板、K 线、自选股；依赖 DSH 的 `plugin_manager` | DSH 宿主才装 |
 | 史诗级韭菜 | 技能（1 个目录） | `/9c`、`/史诗级韭菜` 人格分析技能 | 必装 |
-| Java 环境准备 | 技能（1 个目录） | 「Java 程序员技能包」第 1 个模块 `/java-env-prep`：把资料里的库、各环境、nacos、仓库变成能开工的机器 | Java 项目装 |
-| 项目导览 | 技能（1 个目录） | 「Java 程序员技能包」第 2 个模块 `/java-project-tour`：把项目扫成 `.knowledge/` 索引（有工作流按流程、没有就按入口推断功能点），回答“功能在哪、改哪要动哪些文件” | Java 项目装 |
-| 需求分析 | 技能（1 个目录） | 「Java 程序员技能包」第 3 个模块 `/java-requirement-analysis`：按业务域与技术大类双维度把需求文档拆成子需求、代码锚点、新增类/方法与估时，并列出澄清问题 | Java 项目装 |
+| Java 环境准备 | 技能（1 个目录） | 「Java项目开发技能包」第 1 个模块 `/java-env-prep`：把资料里的库、各环境、nacos、仓库变成能开工的机器 | Java 项目装 |
+| 项目导览 | 技能（1 个目录） | 「Java项目开发技能包」第 2 个模块 `/java-project-tour`：把项目扫成 `.knowledge/` 索引（有工作流按流程、没有就按入口推断功能点），回答“功能在哪、改哪要动哪些文件” | Java 项目装 |
+| 需求分析 | 技能（1 个目录） | 「Java项目开发技能包」第 3 个模块 `/java-requirement-analysis`：按业务域与技术大类双维度把需求文档拆成子需求、代码锚点、新增类/方法与估时，并列出澄清问题 | Java 项目装 |
 | iFinD 数据源 | 第三方技能（可选） | 同花顺 MCP，提供行情兜底与交叉校验 | 可选，需密钥 |
 
 史诗级韭菜技能是自包含的：取数脚本在 `.dsh/skills/9c/scripts/`，统一取数入口与底层适配器都在
@@ -201,9 +201,9 @@ node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<技能根目录>" 
 
 ---
 
-## 第 2.5 步：安装「Java 程序员技能包 · 环境准备」（Java 项目装）
+## 第 2.5 步：安装「Java项目开发技能包 · 环境准备」（Java 项目装）
 
-技能目录名 `java-env-prep`，是本仓库「Java 程序员技能包」的第 1 个模块。它把一份写着数据库连接、
+技能目录名 `java-env-prep`，是本仓库「Java项目开发技能包」的第 1 个模块。它把一份写着数据库连接、
 各环境 URL、nacos / nexus 地址、git 仓库地址的资料（Word、Excel、截图、聊天记录都行），变成一串已执行的动作：
 生成数据库 MCP 条目、拉取 nacos 配置、写浏览器书签、克隆仓库、生成取日志脚本。
 
