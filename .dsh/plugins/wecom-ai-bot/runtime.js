@@ -1,6 +1,5 @@
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { mkdir } from 'node:fs/promises';
 import { WSClient } from '@wecom/aibot-node-sdk';
 import { createBridge } from './bridge.js';
 import { readBridgeSettings } from './config.js';
@@ -8,7 +7,7 @@ import { createObservationStore } from './observation.js';
 import { createStatusTracker } from './status.js';
 import { createStore, bindingKey } from './store.js';
 import { createMessageLog } from './message-log.js';
-import { DEFAULT_WORKSPACE_DIRECTORY, PLUGIN_HOME_DIRECTORY, STORE_VERSION } from './protocol.js';
+import { PLUGIN_HOME_DIRECTORY, STORE_VERSION } from './protocol.js';
 
 /** Resolve the DSH home the same way DSH does: `$DSH_HOME`, else `~/.dsh`. */
 export function resolveDshHome(env = process.env) {
@@ -44,22 +43,17 @@ export function createRuntime(options) {
   const messageLog = createMessageLog({ directory: pluginHome() });
 
   const workspaceRegistry = ctx.get?.('workspaceRegistry');
-  const defaultWorkspacePath = () => join(pluginHome(), DEFAULT_WORKSPACE_DIRECTORY);
-  let defaultWorkspaceId = '';
 
-  /** Register (or reuse) the plugin's own directory as a DSH Workspace. */
-  async function ensureDefaultWorkspace() {
-    if (!workspaceRegistry) return;
-    const target = defaultWorkspacePath();
-    try {
-      await mkdir(target, { recursive: true, mode: 0o700 });
-      let workspace = await workspaceRegistry.resolveByPath(target);
-      if (workspace === undefined) workspace = await workspaceRegistry.create(target);
-      defaultWorkspaceId = workspace?.id ?? '';
-    } catch (error) {
-      log.warn(`default workspace setup failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
+  /** Resolve the DSH default workspace by its fixed title; never creates one. */
+  function resolveDefaultWorkspaceId() {
+    if (!workspaceRegistry) return '';
+    const workspaces = workspaceRegistry.list();
+    const workspace = workspaces.find(item => item.title === 'default-workspace')
+      ?? workspaces.find(item => String(item.path ?? '').replace(/[\\/]+$/, '').endsWith('default-workspace'));
+    return workspace?.id ?? '';
   }
+
+  let defaultWorkspaceId = '';
 
   function listWorkspaces() {
     if (!workspaceRegistry) return [];
@@ -70,7 +64,7 @@ export function createRuntime(options) {
     }));
   }
 
-  /** Human label for a workspace id; an empty id means the plugin default. */
+  /** Human label for a workspace id; an empty id resolves to the default workspace. */
   function workspaceLabel(workspaceId) {
     const id = String(workspaceId ?? '').trim() || defaultWorkspaceId;
     const workspace = id && workspaceRegistry ? workspaceRegistry.get(id) : undefined;
@@ -80,9 +74,9 @@ export function createRuntime(options) {
 
   /**
    * Turn a binding's workspaceId into the `sessionController.create` target.
-   * Falls back to the plugin's own directory when no Workspace can be used.
+   * Falls back to DSH's own default cwd; never creates a workspace.
    */
-  async function resolveSessionTarget(workspaceId) {
+  function resolveSessionTarget(workspaceId) {
     const id = String(workspaceId ?? '').trim() || defaultWorkspaceId;
     if (id && workspaceRegistry?.get(id)) {
       return { workspaceId: id };
@@ -90,9 +84,7 @@ export function createRuntime(options) {
     if (id && workspaceRegistry) {
       throw new Error(`工作空间不存在或已被移除（${id}）`);
     }
-    const cwd = defaultWorkspacePath();
-    await mkdir(cwd, { recursive: true, mode: 0o700 });
-    return { cwd };
+    return {};
   }
 
   let bridge;
@@ -227,7 +219,7 @@ export function createRuntime(options) {
       ];
       for (const dispose of off) if (typeof dispose === 'function') disposers.push(dispose);
       await store.load();
-      await ensureDefaultWorkspace();
+      defaultWorkspaceId = resolveDefaultWorkspaceId();
       schedule();
       await queue;
     },

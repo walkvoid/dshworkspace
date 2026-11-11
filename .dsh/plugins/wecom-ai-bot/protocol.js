@@ -9,8 +9,6 @@ export const STATE_ROUTE = '/api/wecom-ai-bot/state';
 export const STORE_ROUTE = '/api/wecom-ai-bot/store';
 /** Directory below the DSH home that holds this plugin's own data. */
 export const PLUGIN_HOME_DIRECTORY = 'wecom-ai-bot';
-/** The plugin's own default workspace directory, below {@link PLUGIN_HOME_DIRECTORY}. */
-export const DEFAULT_WORKSPACE_DIRECTORY = 'workspace';
 /** Persisted plugin store version (`settings.json`). */
 export const STORE_VERSION = '0.2';
 export const STORE_FILE = 'settings.json';
