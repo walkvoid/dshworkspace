@@ -23,7 +23,7 @@
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
 | `project` | ✅ | 项目名，用于书签文件夹与输出目录。缺失时自动推断：**仓库名公共前缀**（按 `-` 取首段，覆盖 ≥60% 才采用）优先，其次是 **git 组名**（URL 最后一段）。可用 `--project` 覆盖 |
-| `outDir` | — | 输出目录（nacos 配置、MCP 片段、书签备份、`platforms.json`、`tools/<站点>/`、凭据）。缺省为 `./.env-prep`；建议设成 `<git.dir>/.env-prep`，让代码与资料放在一起（<br>`<工作目录>/project/<项目名>/.env-prep`） |
+| `outDir` | — | 输出目录（nacos 配置、MCP 片段、书签备份、`platforms.json`、`tools/<站点>/`、凭据）。缺省为 `./.env-prep`；建议设成 `<git.dir>/.env-prep`，让代码与资料放在一起（<br>`<当前工作空间>/.env-prep`） |
 | `platforms` | — | 日志/发布/缺陷平台主入口，自动探测写入，也可以手写；详见下文 |
 | `release` / `bug` | — | 发布、缺陷平台条目，供书签与后续技能直接消费；通常由 `platforms` 合并而来 |
 | 其余 | — | 都是数组，没有就留空数组 |
@@ -86,10 +86,10 @@
 ## git
 
 ```json
-{ "id": "backend", "url": "git@gitlab.example.com:team/order-service.git", "dir": "~/code/order-service", "branch": "main" }
+{ "id": "backend", "url": "git@gitlab.example.com:team/order-service.git", "dir": "<当前工作空间>", "branch": "main" }
 ```
 
-- `dir` 支持 `~`，相对路径按执行时的当前目录解析；
+- `dir` 是仓库落盘目录（多个仓库时是它们的公共父目录，各仓库平铺其下）；默认取当前工作空间；支持 `~`，相对路径按执行时的当前目录解析；
 - `branch` 可省，默认为远端默认分支；**它只是克隆起点**——默认策略（`active`）会在克隆后切到
   「默认分支之外、最新提交」的远端分支；想固定在这个分支上加 `--keep-branch`（写入的 `results[].branch`
   会记录 `strategy` / `defaultBranch` / `from → to` 与候选）；

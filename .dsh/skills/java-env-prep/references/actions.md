@@ -19,7 +19,7 @@ node scripts/env-prep.mjs apply env-profile.json --only bookmark,clone,nacos,log
 **注意**：
 
 - 条目直接手写进 profile patch，凭据落在 `cordis.patch.yml`（本地文件，不要提交/分享）；
-- `serverName` 只能是 `[A-Za-z0-9_-]{1,32}`，每个环境一个（`mysql_dev` / `mysql_qa` / …），不能重名；
+- `serverName` 只能是 `[A-Za-z0-9_-]{1,32}`，每个环境一个（`mysql_<项目名>_dev` / `mysql_<项目名>_qa` / …），不能重名；
 - DSH 的 HMR 会监听 profile patch，保存后一般几秒内重组；没生效再重启。
 
 ## 2. nacos → 拉取配置
@@ -268,7 +268,7 @@ node scripts/env-prep.mjs platforms env-profile.json       # 只读已保存结�
   "missing": [],
   "sites": [],
   "attempts": [],
-  "registry": "D:\\github\\dshworkspace\\project\\jasolar\\.env-prep\\.platforms.json"
+  "registry": "D:\\harnessworkspace\\jasolar\\.env-prep\\.platforms.json"
 }
 ```
 

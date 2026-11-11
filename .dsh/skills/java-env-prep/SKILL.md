@@ -15,8 +15,8 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 ## 目录约定
 
 ```
-<工作目录>/project/<项目名>/              # git.dir：各仓库平铺在这里
-<工作目录>/project/<项目名>/.env-prep/    # outDir：本技能的全部产物
+<当前工作空间>/                            # git.dir：各仓库直接平铺在当前工作空间（如 D:\harnessworkspace\jasolar）
+<当前工作空间>/.env-prep/                  # outDir：本技能的全部产物
 ├── env-profile.json                      # 唯一输入 + 探测结果
 ├── nacos/  bookmarks/                    # 配置、书签备份
 ├── platforms.json                        # 日志/发布/缺陷平台入口
@@ -25,8 +25,9 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 └── <站点>-credentials.json               # 凭据（git 忽略）
 ```
 
-`project/` 这一层是**隔离层**：所有克隆下来的代码与凭据都收在它下面，`.gitignore` 只忽略
-`/project/` 一条即可，不需要为每个项目单独加规则；本技能的产物一律写进 `.env-prep/`。
+`git.dir` 直接指向**当前工作空间**（通常是用户为该项目专门新建的工作空间，如 `D:\harnessworkspace\jasolar`），
+各子工程作为它的子目录平铺，**不再额外套 `project/<项目名>` 一层**。本技能的产物（含凭据）一律写进 `.env-prep/`，
+`.gitignore` 忽略 `.env-prep/` 即可；克隆下来的各仓库由它们自己的 `.git` 管理。
 
 这两个路径写在 profile 的 `git.dir` 和 `outDir` 里，脚本不再依赖当前工作目录。
 
@@ -298,7 +299,7 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
 
 1. **MCP 位置**：`apply` 不写任何 MCP 配置，只在输出里给 `mcpPatch`（profile 的 `cordis.patch.yml`）
    和 `mcpHint`。**必须把 `mcpPatch` 告诉用户**，按模板把数据库条目手写进该文件的顶层数组；
-   保存后 DSH 的 HMR 一般几秒内重组，没生效再重启（工具前缀 `mcp__mysql_<环境>__*`）。
+   保存后 DSH 的 HMR 一般几秒内重组，没生效再重启（工具前缀 `mcp__mysql_<项目名>_<环境>__*`）。
    不要猜密码、不要试连；`<填入>` 这类占位符要提醒用户替换；
 2. **日志脚本**：`<out>/logs/fetch-logs-<id>.mjs` 是骨架，按探测出的候选接口补全，
    Cookie 走环境变量 `LOG_PLATFORM_COOKIE`，不要写死在文件里；如果平台探测已指向站点脚本

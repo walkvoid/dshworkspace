@@ -87,7 +87,7 @@ GET  auth.<domain>/sso/api/v1/callback?request_id=<uuid>
 
 ```powershell
 schtasks /Create /TN "aio-bugs" /SC DAILY /ST 09:30 /TR ^
-  "node D:\github\dshworkspace\project\jasolar\.env-prep\tools\aio\aio.mjs bugs --json > D:\github\dshworkspace\project\jasolar\.env-prep\tools\aio\bugs.json"
+  "node D:\harnessworkspace\jasolar\.env-prep\tools\aio\aio.mjs bugs --json > D:\harnessworkspace\jasolar\.env-prep\tools\aio\bugs.json"
 ```
 
 ```bash
@@ -111,14 +111,14 @@ const SITE = {
 
 ## 已落地实例（可对照抄）
 
-`project/jasolar/.env-prep/tools/aio/aio.mjs` —— 公司 AIO 平台（OAuth2 授权码 + cookie 会话）：
+`D:\harnessworkspace\jasolar\.env-prep\tools\aio\aio.mjs` —— 公司 AIO 平台（OAuth2 授权码 + cookie 会话）：
 
 - 登录：`sys-web/oauth2/login → authorize → /login?req=… → POST sso/api/v1/login → callback → 应用侧 cookie`；
 - 会话：`session.json` 存 cookie；`01100 会话已过期` 自动重登一次；
 - 业务：`POST /project-web/qaBug/page` 拉缺陷；
 - 坑：`currentAssignTos` 只认用户 ID（传名字返回 0），改成翻页后按 `assignTo` 本地匹配。
 
-`project/jasolar/.env-prep/tools/beecloud/beecloud.mjs` —— BeeCloud 应用观测（本地账号 + JWT cookie）：
+`D:\harnessworkspace\jasolar\.env-prep\tools\beecloud\beecloud.mjs` —— BeeCloud 应用观测（本地账号 + JWT cookie）：
 
 - 登录：`POST /u5/api/v2/login {username,password}` → `Set-Cookie: token=<JWT>`，无需 SSO；
 - 业务：`POST /beelog/api/v1/tenants/{tenant}/search?project=<名>`，body 里 `env` / `env_instance` / `cluster` 必须匹配平台下拉值；

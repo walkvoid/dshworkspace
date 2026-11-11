@@ -1584,7 +1584,7 @@ function addScriptSites(projectDir, store) {
 
 export function resolveRegistryPath(outDir, explicit) {
   if (typeof explicit === 'string' && explicit !== '') return path.resolve(explicit);
-  // 登记表跟产物放在一起，避免再往 <工作目录>/project/ 里散落文件。
+  // 登记表跟产物放在一起，避免往工作空间里散落文件。
   // 用隐藏文件名，和本次探测结果 platforms.json 区分开。
   return path.join(path.resolve(outDir ?? '.env-prep'), '.platforms.json');
 }
