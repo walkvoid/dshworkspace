@@ -118,6 +118,8 @@ git --version       # 没有 git 就走第 1 步的 zip 方案
 git clone https://github.com/walkvoid/dshworkspace.git "<仓库路径>"
 ```
 
+**仓库已存在**：`<仓库路径>` 下已有 `.git` 时不要重复 clone（会报"目录已存在"），改跑 `git -C "<仓库路径>" pull` 更新到最新，再继续第 2 步。
+
 没有 git 时用 zip：
 
 ```powershell
@@ -146,21 +148,21 @@ Expand-Archive "$env:TEMP\dshworkspace.zip" "$env:TEMP\dshworkspace" -Force
 然后运行仓库自带的安装脚本，**不要手工复制**：
 
 ```bash
-node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "~/.dsh/skills" --mode copy
+node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "~/.dsh/skills" --mode copy --force
 ```
 
 - `--mode copy`：复制技能并写入 `repo.txt`（仓库绝对路径），换机器、换目录都能跑；
 - `--mode link`：建目录联接/符号链接，指向仓库，改仓库即时生效（本机自用更省事）；
 - `--skills <a,b>`：只装指定技能（逗号分隔）。**默认只装 `9c` + `fin-data`**（9c 依赖 fin-data 的取数入口，
   脚本会自动补上），装 Java 环境准备要显式指定（见第 2.5 步）；
-- `--force`：目标已存在时覆盖。
+- `--force`：目标已存在时删除重装——**重复安装/更新时带上**，保证装到仓库最新版本（不带会 `skipped` 停留在旧版）。
 
 每个技能都是自包含的：脚本在 `<技能>/scripts/`，数据在 `<技能>/data/`，安装器不再铺任何共享目录。
 
 **只装用户点名的技能**（比如"安装史诗级韭菜"）——在命令后面补 `--skills`：
 
 ```bash
-node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<技能根目录>" --mode copy --skills 9c
+node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<技能根目录>" --mode copy --force --skills 9c
 ```
 
 装 `9c` 时脚本会自动把 `fin-data` 一起装上（`skills` 字段里能看到两项），这是唯一允许的"多装"：
@@ -197,7 +199,7 @@ node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<技能根目录>" 
 再补一条实测：`node "<技能根目录>/9c/scripts/stock-data.mjs" quote 601318` 能返回 `ok: true`，
 说明「9c → fin-data → 适配器」这条链在安装后仍能互通。
 
-**失败处理**：`status: failed` 时会带原因——目标已存在就加 `--force`；技能不存在说明仓库不完整，回到第 1 步。
+**失败处理**：`status: failed` 时会带原因——技能不存在说明仓库不完整，回到第 1 步；其余按 `reason` 处理。
 
 ---
 
@@ -213,7 +215,7 @@ node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<技能根目录>" 
 **默认装到项目级**：Java 技能（环境准备 / 项目导览 / 需求分析）只在当前项目用，`--root` 直接给 `<项目根>/.dsh/skills`，不用再问用户级/项目级；只是多给一个 `--skills`：
 
 ```bash
-node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<项目根>/.dsh/skills" --skills java-env-prep --mode copy
+node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<项目根>/.dsh/skills" --skills java-env-prep --mode copy --force
 ```
 
 > 安装脚本的默认技能列表是 `9c` + `fin-data`，**漏掉 `--skills java-env-prep` 就装不到它**。
@@ -226,8 +228,7 @@ node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<项目根>/.dsh/sk
 <项目根>/.dsh/skills/java-env-prep/references/profile-schema.md
 ```
 
-**失败处理**：`status: failed` 时按 `reason` 走——目标已存在就加 `--force`；
-报"仓库里没有这个技能"说明仓库不完整，回到第 1 步。
+**失败处理**：`status: failed` 时按 `reason` 走——报"仓库里没有这个技能"说明仓库不完整，回到第 1 步。
 
 装进来的是这些：
 
