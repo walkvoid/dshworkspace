@@ -210,10 +210,10 @@ node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<技能根目录>" 
 **什么时候装**：用户是 Java 后端，或明说"帮我准备开发环境""配一下环境"。它与「史诗级韭菜」互不影响，
 不装也不影响第 3 步的看板。
 
-**不用另选目录**——复用第 2 步定下的同一个技能根目录，只是多给一个 `--skills`：
+**默认装到项目级**：Java 技能（环境准备 / 项目导览 / 需求分析）只在当前项目用，`--root` 直接给 `<项目根>/.dsh/skills`，不用再问用户级/项目级；只是多给一个 `--skills`：
 
 ```bash
-node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<技能根目录>" --skills java-env-prep --mode copy
+node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<项目根>/.dsh/skills" --skills java-env-prep --mode copy
 ```
 
 > 安装脚本的默认技能列表是 `9c` + `fin-data`，**漏掉 `--skills java-env-prep` 就装不到它**。
@@ -221,9 +221,9 @@ node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "<技能根目录>" 
 **成功判定**：`results[].status` 为 `copied` 或 `linked`，且这三处都存在：
 
 ```
-<技能根目录>/java-env-prep/SKILL.md
-<技能根目录>/java-env-prep/scripts/env-prep.mjs
-<技能根目录>/java-env-prep/references/profile-schema.md
+<项目根>/.dsh/skills/java-env-prep/SKILL.md
+<项目根>/.dsh/skills/java-env-prep/scripts/env-prep.mjs
+<项目根>/.dsh/skills/java-env-prep/references/profile-schema.md
 ```
 
 **失败处理**：`status: failed` 时按 `reason` 走——目标已存在就加 `--force`；
@@ -288,10 +288,10 @@ node "<技能根目录>/java-env-prep/scripts/env-prep.mjs"
 
    ```yaml
    - insert:
-       - id: mcp-mysql-dev
+       - id: mcp-mysql-jasolar-dev
          name: '@deepseek-ai/dsh-mcp-client'
          config:
-           serverName: mysql_dev          # 工具前缀 mcp__mysql_dev__*
+           serverName: mysql_jasolar_dev          # 工具前缀 mcp__mysql_jasolar_dev__*
            transport: stdio
            command: npx
            args: ['-y', '@benborla29/mcp-server-mysql']
@@ -304,11 +304,13 @@ node "<技能根目录>/java-env-prep/scripts/env-prep.mjs"
              MYSQL_DB: "order_db"
    ```
 
-   `serverName` 不能重复；每个环境（dev / qa / uat）各一条，id 用 `mcp-mysql-dev` / `-qa` / `-uat`。
+   `serverName` 不能重复；每个环境（dev / qa / uat）各一条，id 用 `mcp-mysql-<项目名>-dev` / `-qa` / `-uat`，
+   `serverName` 用 `mysql_<项目名>_dev` / `_qa` / `_uat`（`<项目名>` 取 env-profile.json 的 `project` 字段，
+   如 `jasolar` → `mcp-mysql-jasolar-dev` / `mysql_jasolar_dev`）。
 3. **告诉用户文件位置**（这一步必须做）：把 `cordis.patch.yml` 的绝对路径写出来，说明条目已写入/待写入。
 4. 生效：DSH 的 HMR 监听 profile patch，保存后一般几秒内重组；**没生效再重启 DSH**。
 
-**成功判定**：文件里能搜到对应的 `serverName`；工具列表出现 `mcp__mysql_dev__*`、`mcp__cos__*`。
+**成功判定**：文件里能搜到对应的 `serverName`；工具列表出现 `mcp__mysql_jasolar_dev__*`、`mcp__cos__*`。
 
 **边界**：
 

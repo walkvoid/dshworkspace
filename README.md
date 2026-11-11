@@ -236,10 +236,10 @@ node .dsh/skills/java-requirement-analysis/scripts/req.mjs validate .requirement
 ```yaml
 # ~/.dsh/profiles/<profile>/cordis.patch.yml
 - insert:
-    - id: mcp-mysql-dev
+    - id: mcp-mysql-jasolar-dev
       name: '@deepseek-ai/dsh-mcp-client'
       config:
-        serverName: mysql_dev        # 工具前缀 mcp__mysql_dev__*
+        serverName: mysql_jasolar_dev        # 工具前缀 mcp__mysql_jasolar_dev__*
         transport: stdio
         command: npx
         args: ['-y', '@benborla29/mcp-server-mysql']
