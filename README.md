@@ -59,7 +59,7 @@ node "$repo\.dsh\skills\install-skills.mjs" --root "$env:USERPROFILE\.dsh\skills
 | `--mode copy` | 复制目录并写 `repo.txt`（仓库绝对路径），换机器、换目录都能跑 |
 | `--mode link` | 建目录联接指向仓库，改仓库即时生效（本机自用更省事） |
 | `--skills` | 只装指定技能，逗号分隔；不带则装默认列表（当前 `9c`、`fin-data`） |
-| `--force` | 目标已存在时删除重装（更新/重复安装时带上，装到最新） |
+| `--force` | 默认开启：目标已存在时删除重装；装前还会自动 `git pull`，重复安装总是最新（`--no-force` 关掉） |
 
 每个技能都是**自包含**的：脚本在技能自己的 `scripts/` 里（`9c/scripts/stock-data.mjs` 等），
 数据在 `fin-data/data/` 里，安装器只复制/链接技能目录本身，装完不依赖仓库留在盘上。
@@ -77,7 +77,7 @@ node --test "$repo\.dsh\skills\fin-data\api\test\query.test.mjs"  # 入口离线
 node --test "$repo\.dsh\skills\fin-data\adapter\test\contract.test.mjs"   # 适配器离线契约（24 项）
 ```
 
-**更新**：仓库根 `git pull` → 用 `--force` 重跑上面的安装命令 → 重启 DSH → 刷新页面。
+**更新**：重跑上面的安装命令即可（脚本自动 `git pull` + 覆盖重装）→ 重启 DSH → 刷新页面。
 
 ---
 

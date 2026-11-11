@@ -12,13 +12,17 @@
  *
  * 用法：
  *   node .dsh/skills/install-skills.mjs --root "C:\Users\me\.dsh\skills" --mode link
- *   node .dsh/skills/install-skills.mjs --root "D:\other\.dsh\skills" --mode copy --force
+ *   node .dsh/skills/install-skills.mjs --root "D:\other\.dsh\skills" --mode copy
  *   node .dsh/skills/install-skills.mjs --root ... --skills 9c
+ *
+ * 默认行为：装前先 `git pull` 本仓库（--no-pull 关闭），目标已存在时删除重装（--no-force 关闭），
+ * 所以重复执行总是装到仓库最新版。
  *
  * 退出码：0 全部就绪；1 有失败项。
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 /** 本脚本所在目录（<repo>/.dsh/skills）。 */
@@ -43,13 +47,15 @@ const DEFAULT_SKILLS = ['9c', 'fin-data'];
 const REPO_MARKER = 'repo.txt';
 
 function parseArgs(argv) {
-  const options = { root: '', mode: 'link', skills: DEFAULT_SKILLS, force: false };
+  const options = { root: '', mode: 'link', skills: DEFAULT_SKILLS, force: true, pull: true };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--root') options.root = argv[(index += 1)] ?? '';
     else if (arg === '--mode') options.mode = (argv[(index += 1)] ?? 'link').toLowerCase();
     else if (arg === '--skills') options.skills = String(argv[(index += 1)] ?? '').split(',').map((s) => s.trim()).filter(Boolean);
     else if (arg === '--force') options.force = true;
+    else if (arg === '--no-force') options.force = false;
+    else if (arg === '--no-pull') options.pull = false;
   }
   return options;
 }
@@ -65,7 +71,8 @@ function usage() {
     '                  也可以直接给 DSH 根（…/.dsh），自动装到 <dir>/skills/<name>',
     '  --mode  link|copy  默认 link；copy 会写入 repo.txt 供技能定位仓库',
     `  --skills <a,b>   只装指定技能，默认 ${DEFAULT_SKILLS.join(',')}`,
-    '  --force          目标已存在时删除后重装',
+    '  --force          目标已存在时删除后重装（默认开启；--no-force 关闭，已存在则跳过）',
+    '  --no-pull        装前不 git pull 仓库（默认会先把仓库更新到最新）',
     '',
     '  每个技能自包含（脚本在自己 scripts/ 里），安装一个技能不再铺共享目录。',
   ];
@@ -116,7 +123,7 @@ function materialize(source, destination, options) {
     return { status: 'in-place', reason: '目标就是仓库内的原始目录，无需复制' };
   }
   if (fs.existsSync(destination)) {
-    if (!options.force) return { status: 'skipped', reason: '目标已存在，未指定 --force' };
+    if (!options.force) return { status: 'skipped', reason: '目标已存在（--no-force 跳过）' };
     fs.rmSync(destination, { recursive: true, force: true });
   }
   if (options.mode === 'link') {
@@ -125,6 +132,15 @@ function materialize(source, destination, options) {
   }
   copyDir(source, destination);
   return { status: 'copied', path: destination };
+}
+
+/** 把本仓库更新到最新；不是 git 仓库或 pull 失败时只返回状态，不抛异常、不阻断安装。 */
+function pullRepo(repoRoot) {
+  if (!fs.existsSync(path.join(repoRoot, '.git'))) return { status: 'not-a-repo' };
+  const result = spawnSync('git', ['-C', repoRoot, 'pull', '--ff-only'], { stdio: 'pipe', encoding: 'utf8', timeout: 60_000 });
+  if (result.error) return { status: 'failed', reason: result.error.message };
+  if (result.status !== 0) return { status: 'failed', reason: (result.stderr ?? result.stdout ?? '').trim().split('\n')[0] };
+  return { status: 'pulled' };
 }
 
 function main() {
@@ -144,6 +160,12 @@ function main() {
   // 允许直接把 DSH 根（…/.dsh）交给 --root：技能落到 <root>/skills。
   if (path.basename(root) === '.dsh') root = path.join(root, 'skills');
   if (!fs.existsSync(root)) fs.mkdirSync(root, { recursive: true });
+
+  // 强制更新：先把本仓库 pull 到最新（不是 git 仓库就跳过；pull 失败只提示，不阻断）。
+  if (options.pull) {
+    const pull = pullRepo(REPO_ROOT);
+    if (pull.status !== 'pulled') console.log(`仓库更新：${pull.status}${pull.reason ? `（${pull.reason}）` : ''}`);
+  }
 
   // 依赖展开：点名装 9c 时，fin-data 必须一起装（它提供统一取数入口）。
   const requested = [];

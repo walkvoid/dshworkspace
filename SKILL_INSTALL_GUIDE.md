@@ -118,7 +118,7 @@ git --version       # 没有 git 就走第 1 步的 zip 方案
 git clone https://github.com/walkvoid/dshworkspace.git "<仓库路径>"
 ```
 
-**仓库已存在**：`<仓库路径>` 下已有 `.git` 时不要重复 clone（会报"目录已存在"），改跑 `git -C "<仓库路径>" pull` 更新到最新，再继续第 2 步。
+**仓库已存在**：`<仓库路径>` 下已有 `.git` 时跳过 clone 即可——安装脚本会自动 `git pull` 到最新，不用手动 pull。
 
 没有 git 时用 zip：
 
@@ -155,7 +155,7 @@ node "<仓库路径>/.dsh/skills/install-skills.mjs" --root "~/.dsh/skills" --mo
 - `--mode link`：建目录联接/符号链接，指向仓库，改仓库即时生效（本机自用更省事）；
 - `--skills <a,b>`：只装指定技能（逗号分隔）。**默认只装 `9c` + `fin-data`**（9c 依赖 fin-data 的取数入口，
   脚本会自动补上），装 Java 环境准备要显式指定（见第 2.5 步）；
-- `--force`：目标已存在时删除重装——**重复安装/更新时带上**，保证装到仓库最新版本（不带会 `skipped` 停留在旧版）。
+- `--force`：默认开启——目标已存在时删除重装，配合装前自动 `git pull`，重复安装总是装到最新；`--no-force` 可关掉（已存在的技能跳过）。
 
 每个技能都是自包含的：脚本在 `<技能>/scripts/`，数据在 `<技能>/data/`，安装器不再铺任何共享目录。
 
