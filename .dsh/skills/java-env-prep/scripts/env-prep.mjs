@@ -1601,6 +1601,51 @@ export function resolveRegistryPath(outDir, explicit) {
   return path.join(sharedToolsRoot(), '.platforms.json');
 }
 
+/**
+ * 把某个项目 `.env-prep` 里的站点脚本 / 凭据 / 会话迁移到共享工具库（~/.dsh/env-prep）。
+ * 同站点去重：共享库已有就不覆盖。站点脚本用 HERE 相对路径，整体搬家后路径关系不变。
+ * @param dir - 项目目录，或直接是 `.env-prep` 目录。
+ */
+export function migrateToShared(dir) {
+  const resolved = path.resolve(dir);
+  const source = path.basename(resolved) === '.env-prep' ? resolved : path.join(resolved, '.env-prep');
+  const shared = sharedToolsRoot();
+  const moved = [];
+  const skipped = [];
+
+  const toolsDir = path.join(source, 'tools');
+  if (fs.existsSync(toolsDir)) {
+    for (const entry of fs.readdirSync(toolsDir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+      const site = entry.name;
+      const dst = path.join(shared, 'tools', site);
+      if (fs.existsSync(dst)) {
+        skipped.push({ kind: 'tool', site, reason: '共享库已有该站点脚本' });
+        continue;
+      }
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      fs.cpSync(path.join(toolsDir, site), dst, { recursive: true });
+      moved.push({ kind: 'tool', site, to: dst });
+    }
+  }
+
+  if (fs.existsSync(source)) {
+    for (const entry of fs.readdirSync(source)) {
+      if (!entry.endsWith('-credentials.json')) continue;
+      const dst = path.join(shared, entry);
+      if (fs.existsSync(dst)) {
+        skipped.push({ kind: 'credential', site: entry, reason: '共享库已有该凭据' });
+        continue;
+      }
+      fs.mkdirSync(shared, { recursive: true });
+      fs.copyFileSync(path.join(source, entry), dst);
+      moved.push({ kind: 'credential', site: entry, to: dst });
+    }
+  }
+
+  return { shared, moved, skipped };
+}
+
 function readRegistry(file) {
   if (!fs.existsSync(file)) return { schema: 1, sites: [] };
   try {
@@ -2048,7 +2093,7 @@ export async function discoverPlatforms(profile, outDir, options = {}) {
 async function main() {
   const [command, profilePath, ...rest] = process.argv.slice(2);
   if (!command || !profilePath) {
-    console.log('用法：env-prep.mjs <validate|plan|apply|infer|branch|discover|platforms> <profile.json> [选项]');
+    console.log('用法：env-prep.mjs <validate|plan|apply|infer|branch|discover|platforms|migrate> <profile.json|目录> [选项]');
     console.log('  --only a,b            只执行指定动作（discover/bookmark/clone/nacos/logs/hosts）');
     console.log('  --out dir             输出目录，默认 ./.env-prep');
     console.log('  --project <name>      覆盖项目名（默认从仓库前缀或 git 组名推断）');
@@ -2071,7 +2116,14 @@ async function main() {
     console.log('  discover <profile>    探测日志/发布/缺陷平台入口，写 platforms.json 并合并回 profile');
     console.log('  platforms <profile>   读取已保存的平台入口（discover 的产物）');
     console.log('  branch <profile>      对已克隆仓库套用分支策略；--dry-run 只预览，--no-fetch 不拉远端');
+    console.log('  migrate <目录>        把该目录下 .env-prep 里的站点脚本/凭据/会话迁移到共享工具库');
     process.exitCode = 1;
+    return;
+  }
+
+  // migrate：把某个项目 .env-prep 里的站点脚本/凭据/会话迁到共享工具库（同站点去重）。
+  if (command === 'migrate') {
+    console.log(JSON.stringify(migrateToShared(profilePath), null, 2));
     return;
   }
 

@@ -340,6 +340,9 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
 > 复用规则：同一站点（同账号）只探测一次、只登录一次；别的项目发现共享库里已有该站点脚本，直接复用，
 > 只把自己那份 `params`（如 `projectId`）带过去。项目独有站点同样放共享库（只是只有一个项目引用），不单独建目录。
 
+> 旧数据迁移：改共享库之前跑出来的站点脚本/凭据/会话还在项目的 `.env-prep/` 里，用
+> `node scripts/env-prep.mjs migrate <项目目录>` 把它们迁到共享库（同站点去重、不覆盖）。
+
 **完成判定**（缺一不算探明成功）：
 
 - [ ] 登录返回成功，且拿到会话 cookie / token；
