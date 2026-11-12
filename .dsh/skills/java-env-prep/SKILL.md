@@ -338,7 +338,7 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
 `platforms` / `bug` / `logs` 条目的 `params` 字段里，站点脚本的业务命令用它们查数据。
 
 > 复用规则：同一站点（同账号）只探测一次、只登录一次；别的项目发现共享库里已有该站点脚本，直接复用，
-> 只把自己那份 `params`（如 `projectId`）带过去。
+> 只把自己那份 `params`（如 `projectId`）带过去。项目独有站点同样放共享库（只是只有一个项目引用），不单独建目录。
 
 **完成判定**（缺一不算探明成功）：
 
