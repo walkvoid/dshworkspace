@@ -118,17 +118,18 @@
     "confidence": "script",
     "detected": true,
     "api": "/u5/api/v1/auth/me",
-    "tools": ".env-prep/tools/beecloud/beecloud.mjs",
-    "command": "node .env-prep/tools/beecloud/beecloud.mjs search --query '<关键字>' --hours 1",
+    "tools": "~/.dsh/env-prep/tools/beecloud/beecloud.mjs",
+    "command": "node ~/.dsh/env-prep/tools/beecloud/beecloud.mjs search --query '<关键字>' --hours 1",
     "auth": "script-managed"
   },
-  "release": { "site": "beecloud", "url": "http://beecloud.example.com:1040", "tools": ".env-prep/tools/beecloud/beecloud.mjs" },
-  "bug": { "site": "aio", "url": "https://aio.example.com", "tools": ".env-prep/tools/aio/aio.mjs", "command": "node .env-prep/tools/aio/aio.mjs bugs" }
+  "release": { "site": "beecloud", "url": "http://beecloud.example.com:1040", "tools": "~/.dsh/env-prep/tools/beecloud/beecloud.mjs" },
+  "bug": { "site": "aio", "url": "https://aio.example.com", "tools": "~/.dsh/env-prep/tools/aio/aio.mjs", "command": "node ~/.dsh/env-prep/tools/aio/aio.mjs bugs", "params": { "projectId": "1902260200386785282" } }
 }
 ```
 
 - `url` 是站点入口（origin）；`api` 只写**真正探到**的接口（401/403/405 也算存在），不猜 UI 子路径；
-- `tools` / `command` 指向已生成的站点脚本，统一放 `.env-prep/tools/<站点>/`，后续直接跑，不再重新找接口；
+- `tools` / `command` 指向**共享工具库** `~/.dsh/env-prep/tools/<站点>/<站点>.mjs`（登录脚本/凭据/会话跨项目复用）；
+- `params`：**每项目个性化**的业务参数（如缺陷平台的 `projectId`、日志平台的 tenant 等），站点脚本的业务命令用它查数据——多个项目共享同一份登录脚本，但各存各的 `params`；
 - `confidence`：`script` > `saved` > `provided` > `suite` > `signature` > `registry` > `bookmark` > `hostname`；
 - `detected: true` 表示自动探测写入；**用户手写的条目不会被自动结果覆盖**；
 - profile 只存主入口；完整结果（`alternates`、`sites`、`attempts`、`missing`、`registry`）在
@@ -137,7 +138,7 @@
 ## release / bug
 
 ```json
-{ "id": "beecloud", "site": "beecloud", "name": "BeeCloud", "url": "http://beecloud.example.com:1040", "tools": ".env-prep/tools/beecloud/beecloud.mjs", "detected": true }
+{ "id": "beecloud", "site": "beecloud", "name": "BeeCloud", "url": "http://beecloud.example.com:1040", "tools": "~/.dsh/env-prep/tools/beecloud/beecloud.mjs", "detected": true }
 ```
 
 与 `logs` 同构：`id`/`site` 一致，`name` 用于书签，`tools`/`command` 指向取数脚本。

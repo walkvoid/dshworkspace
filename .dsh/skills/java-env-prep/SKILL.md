@@ -62,7 +62,7 @@ description: Java 项目环境准备。用户输入 /java-env-prep、/env-prep�
 | git 仓库 | `git clone` 到指定目录（**只克隆最近 30 天有提交的仓库**），然后切到“正在开发”的分支 | 目标目录 |
 | 内部日志平台 | 探测接口 + 生成取日志脚本 | `<out>/logs/fetch-logs-<id>.mjs` |
 | **日志/发布/缺陷平台（用户没写入口）** | **自动探测入口并保存**（站点脚本 / 已知套件 / 平台登记表 / 书签 / 同域候选） | `<out>/platforms.json` + profile 的 `platforms`/`logs`/`release`/`bug`；登记表 `<out>/.platforms.json` |
-| 需要登录的 Web 系统（缺陷/发布/日志平台…；**资料里任何「网址+账号密码」都算**） | 后台异步探明登录方式，生成**懒加载**自动登录脚本并缓存会话 | `<项目>/.env-prep/tools/<站点>/<站点>.mjs`，凭据放 `<项目>/.env-prep/` |
+| 需要登录的 Web 系统（缺陷/发布/日志平台…；**资料里任何「网址+账号密码」都算**） | 后台异步探明登录方式，生成**懒加载**自动登录脚本并缓存会话 | `~/.dsh/env-prep/tools/<站点>/<站点>.mjs`（共享），凭据放 `~/.dsh/env-prep/` |
 
 **克隆完切分支（默认行为）**：`git clone` 之后执行一次
 `git for-each-ref --sort=-committerdate refs/remotes/origin`，然后按策略选一条分支
@@ -108,7 +108,7 @@ Git 不记录分支创建时间（`%(creatordate)` 对分支就是 tip 时间，
 | 用户提供 | 任何 URL + 名字/备注命中平台关键词（日志/发布/缺陷/构建/Jenkins/Jira…） |
 | 已知套件 | BeeCloud=日志+发布、AIO=缺陷、Jenkins=发布、Grafana=日志、Jira/禅道/TAPD=缺陷 |
 | 页面特征 | 抓标题/正文里的 `BeeCloud`/`应用观测`/`qaBug`/`DevOps` 等 |
-| 平台登记表 | `<out>/.platforms.json`，同一 outDir 重复探测时复用（不含凭据） |
+| 平台登记表 | `~/.dsh/env-prep/.platforms.json`，跨项目复用（不含凭据） |
 | 浏览器书签 | 只读 Chrome/Edge/Brave 书签，按已知套件或同域筛选 |
 | 同域候选 | 固定平台名 + profile 出现过的协议/端口，默认上限 24 次请求 |
 
@@ -326,15 +326,19 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
 3. 把每个站点的探明作为**后台任务/子代理**并发启动，一个站点一个任务；
 4. 全部跑完（或用户追问时）再汇报，不影响主线已经完成的动作。
 
-每个站点的交付物固定：
+每个站点的交付物固定（**登录脚本 / 凭据 / 会话放共享工具库，跨项目复用**；每项目只存个性化参数）：
 
 ```text
-<项目>/.env-prep/tools/<站点>/<站点>.mjs          # 登录 + 业务取数脚本（懒加载）
-<项目>/.env-prep/<站点>-credentials.json          # 账号密码（git 忽略）
-<项目>/.env-prep/tools/<站点>/session.json        # 会话缓存（等同半个密码）
+~/.dsh/env-prep/tools/<站点>/<站点>.mjs           # 登录 + 业务取数脚本（懒加载，全局一份）
+~/.dsh/env-prep/<站点>-credentials.json           # 账号密码（git 忽略，全局一份）
+~/.dsh/env-prep/tools/<站点>/session.json         # 会话缓存（等同半个密码，全局一份）
 ```
 
-> 同一技能的产物都收在 `.env-prep/`：配置、凭据、平台清单、取数脚本、会话。
+每项目的个性化参数（如缺陷平台的 `projectId`、日志平台的 tenant）写在 `env-profile.json` 的
+`platforms` / `bug` / `logs` 条目的 `params` 字段里，站点脚本的业务命令用它们查数据。
+
+> 复用规则：同一站点（同账号）只探测一次、只登录一次；别的项目发现共享库里已有该站点脚本，直接复用，
+> 只把自己那份 `params`（如 `projectId`）带过去。
 
 **完成判定**（缺一不算探明成功）：
 
@@ -374,13 +378,13 @@ node scripts/env-prep.mjs branch <profile> --no-fetch           # 刚 fetch 过�
    302 到 `auth.<domain>/sso/api/v1/authorize` → OAuth2 授权码（`/login?req=…` → `POST /sso/api/v1/login` → `callback` → 应用侧换 Cookie）；
    有验证码/短信/OTP → **不能全自动**，先跟用户说清楚；
 3. **四件套**：CookieJar + 登录后校验 + 过期（401/`01100`）自动重登一次 + 登录被拒**立刻停**（有锁号风险，禁止重试）；
-4. **凭据**：环境变量优先，其次 `<项目>/.env-prep/<site>-credentials.json`（已 git 忽略）；
+4. **凭据**：环境变量优先，其次共享库 `~/.dsh/env-prep/<site>-credentials.json`（已 git 忽略）；
    不打印、不进日志、不提交；会话 `session.json` 等同于半个密码，也别外发；
 5. **懒加载**：每次用之前 `ensureSession()` —— 无会话→登录、有会话→探活、过期→重登；
    探活接口要“必须登录才能访问且便宜”（如 `/auth/me`），且探活请求体要合法，否则会被误判成过期；
    不要让用户先手动登录，也不要默认排定时任务（需要定时再单独加）。
 6. **沉淀差异**：同一套引擎，只把站点差异（URL、字段名、成功判定、过期码）写进配置。
-7. **给平台探测留钩子**：站点脚本放在 `<项目>/.env-prep/tools/<站点>/<站点>.mjs`，顶部用
+7. **给平台探测留钩子**：站点脚本放在共享库 `~/.dsh/env-prep/tools/<站点>/<站点>.mjs`，顶部用
    `const BASE = 'https://…'` 写站点根地址；`env-prep discover` 会**静态读取**它来判断平台类型，
    **不执行脚本**。一个站点承载多个子平台时（BeeCloud 同时是日志与发布），可以额外提供
    `<script> platforms` 子命令供人工/后续技能查询子平台清单，探测阶段不会自动调用它。

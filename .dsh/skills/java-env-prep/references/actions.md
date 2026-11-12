@@ -228,12 +228,12 @@ node scripts/env-prep.mjs platforms env-profile.json       # 只读已保存结�
 
 | 顺序 | 来源 | `confidence` | 说明 |
 | --- | --- | --- | --- |
-| 1 | 项目站点脚本 `.env-prep/tools/<站点>/<站点>.mjs` | `script` | 静态读 `const BASE = 'https://…'`，**不执行脚本**；命中已知套件或正文关键词就归类 |
+| 1 | 项目站点脚本（共享库 `~/.dsh/env-prep/tools/<站点>/<站点>.mjs`） | `script` | 静态读 `const BASE = 'https://…'`，**不执行脚本**；命中已知套件或正文关键词就归类 |
 | 2 | `profile.platforms` / `logs` / `release` / `bug` 里 `detected: true` | `saved` | 上一次探测的结果，直接复用 |
 | 3 | 用户显式写的 URL + 名字/备注 | `provided` | 关键词按词边界匹配，`login`/`lowcode` 不会命中 `log` |
 | 4 | 已知套件（`KNOWN_SITES`） | `suite` | BeeCloud=日志+发布、AIO=缺陷、Jenkins=发布、Grafana/Kibana=日志、Jira/禅道/TAPD/Redmine=缺陷、Argo CD=发布 |
 | 5 | 页面特征 | `signature` | 标题/正文命中 `应用观测`/`qaBug`/`DevOps` 等；只用于补类型，不单独定站点 |
-| 6 | 平台登记表 | `registry` | `<out>/.platforms.json`，同一 outDir 重复探测时复用；只存 URL 与类型，**不含凭据** |
+| 6 | 平台登记表 | `registry` | `~/.dsh/env-prep/.platforms.json`，跨项目复用；只存 URL 与类型，**不含凭据** |
 | 7 | 浏览器书签 | `bookmark` | 只读 Chrome/Edge/Brave 的 `Bookmarks`，按已知套件/同域/关键词筛选，保留文件夹路径作证据 |
 | 8 | 同域候选 | `hostname` | 固定平台名（beecloud/aio/jenkins/grafana/jira…）+ profile 里出现过的协议/端口 |
 

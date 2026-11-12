@@ -59,7 +59,7 @@ GET  auth.<domain>/sso/api/v1/callback?request_id=<uuid>
 
 ## 第 4 步：凭据与产物放哪
 
-- 凭据：环境变量（`AIO_USER` / `AIO_PASS`）优先，其次 `<项目>/.env-prep/<site>-credentials.json`；
+- 凭据：环境变量（`AIO_USER` / `AIO_PASS`）优先，其次共享库 `~/.dsh/env-prep/<site>-credentials.json`；
   该目录已在 `.gitignore` 里，且**不要打印、不要写进日志、不要提交**；
 - 会话：脚本同目录 `session.json`（含 Cookie，等于半个密码）；
 - 输出：`--json` 打到 stdout，需要留档时重定向到文件。

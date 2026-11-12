@@ -1533,7 +1533,12 @@ function listToolScripts(dir, depth = 1) {
  */
 export function discoverScriptSites(projectDir) {
   const results = [];
-  const files = listToolScripts(path.join(projectDir, '.env-prep', 'tools'), 2);
+  const sharedRoot = sharedToolsRoot();
+  // 共享工具库优先，其次项目自己的 .env-prep/tools（共享脚本跨项目复用）。
+  const files = [
+    ...listToolScripts(path.join(sharedRoot, 'tools'), 2),
+    ...listToolScripts(path.join(projectDir, '.env-prep', 'tools'), 2),
+  ];
   for (const file of files) {
     let text = '';
     try {
@@ -1551,15 +1556,17 @@ export function discoverScriptSites(projectDir) {
       ...Object.keys(classifyText(text.slice(0, 6000))),
     ]);
     if (kinds.size === 0) continue;
-    const rel = path.relative(projectDir, file).replace(/\\/g, '/');
+    const inShared = path.resolve(file).startsWith(path.resolve(sharedRoot) + path.sep);
+    // 共享脚本用绝对路径（全局唯一）；项目内脚本用相对项目路径。
+    const tools = inShared ? path.resolve(file).replace(/\\/g, '/') : path.relative(projectDir, file).replace(/\\/g, '/');
     const commands = {};
-    if (rule?.id === 'beecloud' && kinds.has('log')) commands.log = `node ${rel} search --query '<关键字>' --hours 1`;
-    if (rule?.id === 'aio' && kinds.has('bug')) commands.bug = `node ${rel} bugs`;
+    if (rule?.id === 'beecloud' && kinds.has('log')) commands.log = `node ${tools} search --query '<关键字>' --hours 1`;
+    if (rule?.id === 'aio' && kinds.has('bug')) commands.bug = `node ${tools} bugs`;
     results.push({
       base,
       name: rule?.name ?? stem,
       kinds: [...kinds],
-      tools: rel,
+      tools,
       commands,
       rule,
     });
@@ -1582,11 +1589,16 @@ function addScriptSites(projectDir, store) {
   }
 }
 
+/** 共享工具库根：用户级目录，跨项目复用站点登录脚本、凭据、会话。 */
+export function sharedToolsRoot(env = process.env) {
+  const home = env.USERPROFILE ?? os.homedir();
+  return path.join(home, '.dsh', 'env-prep');
+}
+
 export function resolveRegistryPath(outDir, explicit) {
   if (typeof explicit === 'string' && explicit !== '') return path.resolve(explicit);
-  // 登记表跟产物放在一起，避免往工作空间里散落文件。
-  // 用隐藏文件名，和本次探测结果 platforms.json 区分开。
-  return path.join(path.resolve(outDir ?? '.env-prep'), '.platforms.json');
+  // 登记表放共享工具库，跨项目复用已探明的站点（脚本/凭据/会话也放这里）。
+  return path.join(sharedToolsRoot(), '.platforms.json');
 }
 
 function readRegistry(file) {

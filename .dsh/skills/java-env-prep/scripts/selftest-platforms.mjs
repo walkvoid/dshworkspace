@@ -20,6 +20,7 @@ import {
   missingPlatformKinds,
   registrableDomain,
   resolveRegistryPath,
+  sharedToolsRoot,
   siteBase,
 } from './env-prep.mjs';
 
@@ -72,10 +73,10 @@ test('collectDomains 从各环境地址归并出公司域名', () => {
   assert.deepEqual([...domains], ['jasolar.com']);
 });
 
-test('resolveRegistryPath 指向 outDir/.platforms.json', () => {
+test('resolveRegistryPath 指向共享工具库 .platforms.json', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'env-prep-selftest-'));
   const outDir = path.join(root, 'project', 'demo', '.env-prep');
-  assert.equal(resolveRegistryPath(outDir), path.join(outDir, '.platforms.json'));
+  assert.equal(resolveRegistryPath(outDir), path.join(sharedToolsRoot(), '.platforms.json'));
   assert.equal(resolveRegistryPath(outDir, path.join(root, 'custom.json')), path.join(root, 'custom.json'));
   fs.rmSync(root, { recursive: true, force: true });
 });
